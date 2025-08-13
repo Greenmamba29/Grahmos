@@ -22,6 +22,18 @@ module.exports = {
         cacheableResponse: { statuses: [0, 200] },
         expiration: { maxEntries: 2000, maxAgeSeconds: 60 * 60 * 24 * 30 }
       }
+    },
+    // PMTiles offline maps
+    {
+      urlPattern: /\.pmtiles(\?.*)?$/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'pmtiles',
+        expiration: {
+          maxEntries: 10,
+          maxAgeSeconds: 30 * 24 * 60 * 60
+        }
+      }
     }
   ]
 }
