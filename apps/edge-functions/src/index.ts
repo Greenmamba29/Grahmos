@@ -3,6 +3,25 @@ import * as util from 'tweetnacl-util'
 
 function canon(obj:any){ return JSON.stringify(obj, Object.keys(obj).sort()) }
 
+// Security headers helper for all responses
+function addSecurityHeaders(headers: HeadersInit = {}): Headers {
+  const secureHeaders = new Headers(headers)
+  
+  // Strict CSP for API endpoints
+  secureHeaders.set('Content-Security-Policy', [
+    "default-src 'none'",
+    "connect-src 'self'"
+  ].join('; '))
+  
+  // Additional security headers
+  secureHeaders.set('X-Content-Type-Options', 'nosniff')
+  secureHeaders.set('X-Frame-Options', 'DENY')
+  secureHeaders.set('Referrer-Policy', 'no-referrer')
+  secureHeaders.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  
+  return secureHeaders
+}
+
 // Rate limiting helper
 async function checkRateLimit(env: any, ip: string, intentId: string): Promise<boolean> {
   const key = `ratelimit:${ip}:${intentId}`
@@ -65,7 +84,7 @@ export default {
         if (contentLength && parseInt(contentLength) > 32768) {
           return new Response(JSON.stringify({ error: 'Payload too large', code: 'PAYLOAD_TOO_LARGE' }), { 
             status: 413,
-            headers: { 'content-type': 'application/json' }
+            headers: addSecurityHeaders({ 'content-type': 'application/json' })
           })
         }
 
@@ -73,7 +92,7 @@ export default {
         if (!body || !body.intentId || !body.payload) {
           return new Response(JSON.stringify({ error: 'Bad request format', code: 'INVALID_FORMAT' }), { 
             status: 400,
-            headers: { 'content-type': 'application/json' }
+            headers: addSecurityHeaders({ 'content-type': 'application/json' })
           })
         }
 
@@ -82,7 +101,7 @@ export default {
         if (!validation.valid) {
           return new Response(JSON.stringify({ error: validation.error, code: 'INVALID_PAYLOAD' }), {
             status: 400,
-            headers: { 'content-type': 'application/json' }
+            headers: addSecurityHeaders({ 'content-type': 'application/json' })
           })
         }
 
@@ -91,7 +110,7 @@ export default {
         if (!allowed) {
           return new Response(JSON.stringify({ error: 'Rate limit exceeded', code: 'RATE_LIMIT' }), {
             status: 429,
-            headers: { 'content-type': 'application/json' }
+            headers: addSecurityHeaders({ 'content-type': 'application/json' })
           })
         }
 
@@ -99,7 +118,7 @@ export default {
         const existingOrder = await env.ORDERS?.get(body.intentId)
         if (existingOrder) {
           return new Response(existingOrder, {
-            headers: { 'content-type': 'application/json' }
+            headers: addSecurityHeaders({ 'content-type': 'application/json' })
           })
         }
 
@@ -122,7 +141,7 @@ export default {
         if (!secretB64) {
           return new Response(JSON.stringify({ error: 'Server key missing', code: 'SERVER_ERROR' }), { 
             status: 500,
-            headers: { 'content-type': 'application/json' }
+            headers: addSecurityHeaders({ 'content-type': 'application/json' })
           })
         }
         
@@ -138,13 +157,13 @@ export default {
         await env.ORDERS?.put(body.intentId, responseJson, { expirationTtl: 86400 }) // 24h TTL
 
         return new Response(responseJson, {
-          headers: { 'content-type': 'application/json' }
+          headers: addSecurityHeaders({ 'content-type': 'application/json' })
         })
       } catch (error) {
         console.error('Purchase processing error:', error)
         return new Response(JSON.stringify({ error: 'Internal server error', code: 'SERVER_ERROR' }), {
           status: 500,
-          headers: { 'content-type': 'application/json' }
+          headers: addSecurityHeaders({ 'content-type': 'application/json' })
         })
       }
     }
@@ -153,14 +172,16 @@ export default {
       const keyId = env.RECEIPT_KEY_ID || 'default'
       const pubkey = env.RECEIPT_PUBLIC_KEY || ''
       return new Response(JSON.stringify({ keyId, pubkey }), { 
-        headers: { 'content-type': 'application/json' }
+        headers: addSecurityHeaders({ 'content-type': 'application/json' })
       })
     }
 
     if (url.pathname === '/library') {
-      return new Response(JSON.stringify({ packs: [] }), { headers: { 'content-type': 'application/json' }})
+      return new Response(JSON.stringify({ packs: [] }), { headers: addSecurityHeaders({ 'content-type': 'application/json' }) })
     }
 
-    return new Response('ok')
+    return new Response('ok', {
+      headers: addSecurityHeaders({ 'content-type': 'text/plain' })
+    })
   }
 }

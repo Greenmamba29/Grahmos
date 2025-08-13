@@ -12,8 +12,9 @@ module.exports = {
         cacheName: 'kiwix-html',
         cacheableResponse: { statuses: [0, 200] },
         expiration: { 
-          maxEntries: 5000,  // Up to 5k HTML entries
-          maxAgeSeconds: 60 * 60 * 24 * 7  // 7 days for HTML
+          maxEntries: 2000,  // Reduced to 2k HTML entries for better performance
+          maxAgeSeconds: 60 * 60 * 24 * 7,  // 7 days for HTML
+          purgeOnQuotaError: true  // Auto-purge on quota issues
         }
       }
     },
@@ -25,8 +26,9 @@ module.exports = {
         cacheName: 'kiwix-assets',
         cacheableResponse: { statuses: [0, 200] },
         expiration: { 
-          maxEntries: 3000,  // Up to 3k asset entries
-          maxAgeSeconds: 60 * 60 * 24 * 30  // 30 days for assets
+          maxEntries: 2000,  // Reduced to 2k asset entries for better performance
+          maxAgeSeconds: 60 * 60 * 24 * 30,  // 30 days for assets
+          purgeOnQuotaError: true  // Auto-purge on quota issues
         }
       }
     },
@@ -38,8 +40,9 @@ module.exports = {
         cacheName: 'pmtiles',
         cacheableResponse: { statuses: [0, 200] },
         expiration: { 
-          maxEntries: 100,  // PMTiles can be large, limit entries
-          maxAgeSeconds: 60 * 60 * 24 * 60  // 60 days for tiles
+          maxEntries: 100,  // PMTiles can be large, keep tight limit
+          maxAgeSeconds: 60 * 60 * 24 * 60,  // 60 days for tiles
+          purgeOnQuotaError: true  // Auto-purge on quota issues
         }
       }
     }
