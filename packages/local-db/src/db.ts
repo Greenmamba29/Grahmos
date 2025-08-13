@@ -7,7 +7,17 @@ export interface Doc {
   summary?: string
 }
 
-export interface ContentPack { id:string; name:string; version:string; signature:string; installedAt:number }
+export interface ContentPack { 
+  id: string; 
+  name: string; 
+  size: number;
+  sha256: string;
+  keyId?: string;
+  pubkey: string;
+  sigB64: string;
+  installedAt: number;
+  status: 'pending' | 'verified' | 'failed';
+}
 export interface Delta { id:string; ts:number; payload:any; sig:string }
 export interface PurchaseIntent { id:string; ts:number; payload:any; status:'queued'|'sending'|'ok'|'err'; lastError?: string }
 export interface Receipt { id:string; intentId:string; ts:number; payload:any; sig:string }
@@ -21,9 +31,9 @@ export class LocalDB extends Dexie {
   
   constructor(){ 
     super('grahmos')
-    this.version(3).stores({
+    this.version(4).stores({
       docs: 'id,title,url,summary',
-      contentPacks:'id', 
+      contentPacks:'id,status,installedAt', 
       deltas:'id, ts', 
       purchaseQueue:'id, ts, status',
       receipts: 'id, intentId, ts'
