@@ -48,7 +48,7 @@ export default function Page(){
           ))}
           {(!results || results.length===0) && !loading && (
             <li className="p-3 opacity-60 text-sm">
-              No results yet. Try &quot;First Aid&quot;
+              No results yet. Try &quot;First Aid&quot; or &quot;Emergency&quot;
               <button 
                 className="ml-3 px-2 py-1 text-xs rounded bg-blue-700 hover:bg-blue-600" 
                 onClick={() => setShowBuy(true)}
