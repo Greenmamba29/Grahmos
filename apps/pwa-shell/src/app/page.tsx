@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import useOnline from '@/lib/useOnline'
 import { useOfflineSearch, type Doc } from '@/lib/search'
 import PurchaseModal from './purchase/PurchaseModal'
+import { getAppSettings } from '@/lib/settings'
 
 export default function Page(){
   const online = useOnline()
@@ -11,7 +12,12 @@ export default function Page(){
   const [results,setResults] = useState<Doc[]>([])
   const [activePath,setActivePath] = useState<string | null>(null)
   const [showBuy, setShowBuy] = useState(false)
+  const [redMode, setRedMode] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement|null>(null)
+
+  useEffect(() => {
+    getAppSettings().then(settings => setRedMode(settings.redMode))
+  }, [])
 
   const performSearch = useCallback(async () => {
     if(q.trim().length===0){ setResults([]); return }
@@ -25,7 +31,27 @@ export default function Page(){
   },[performSearch])
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      {redMode && (
+        <div className="bg-red-900/20 border border-red-700 rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-red-200 mb-3">Emergency Panel</h2>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <button className="px-3 py-2 bg-red-700 hover:bg-red-600 rounded text-sm">
+              First Aid
+            </button>
+            <button className="px-3 py-2 bg-red-700 hover:bg-red-600 rounded text-sm">
+              Evacuation
+            </button>
+          </div>
+          <div className="text-sm text-red-300">
+            <div className="font-medium mb-1">Recent Urgent Updates:</div>
+            <div className="opacity-80">• Emergency protocols updated</div>
+            <div className="opacity-80">• New evacuation routes available</div>
+          </div>
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <input
@@ -74,6 +100,7 @@ export default function Page(){
           onClose={() => setShowBuy(false)} 
         />
       )}
+      </div>
     </div>
   )
 }
