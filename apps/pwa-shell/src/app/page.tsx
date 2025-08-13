@@ -1,12 +1,14 @@
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import useOnline from '@/lib/useOnline'
 import { useOfflineSearch, type Doc } from '@/lib/search'
 import PurchaseModal from './purchase/PurchaseModal'
-import { getAppSettings, getSyncPassphrase } from '../lib/settings'
-import { startPeerSync, deriveKey } from '../../../../packages/p2p-delta/src/peerSync'
+import FiltersComponent from './(components)/Filters'
+import { getAppSettings, getSyncPassphrase, getBatteryProfile, getAutoBatteryProfile } from '../lib/settings'
+import { startPeerSync, deriveKey, updateCadence, applyProfile } from '../../../../packages/p2p-delta/src/peerSync'
 import { db } from '../../../../packages/local-db/src/db'
 import { addDocs } from '../../../../packages/search-core/src'
+import { Filters } from '../lib/filters'
 
 export default function Page(){
   const online = useOnline()
@@ -16,10 +18,17 @@ export default function Page(){
   const [activePath,setActivePath] = useState<string | null>(null)
   const [showBuy, setShowBuy] = useState(false)
   const [redMode, setRedMode] = useState(false)
+  const [batteryProfile, setBatteryProfile] = useState<'normal' | 'red' | 'lowPower' | 'auto'>('auto')
+  const [filters, setFilters] = useState<Filters>({ category: [], availability: 'any' })
   const iframeRef = useRef<HTMLIFrameElement|null>(null)
 
   useEffect(() => {
-    getAppSettings().then(settings => setRedMode(settings.redMode))
+    getAppSettings().then(settings => {
+      setRedMode(settings.redMode)
+      setBatteryProfile(settings.batteryProfile)
+      // Apply initial battery profile
+      applyProfile(settings.batteryProfile, settings.redMode)
+    })
     
     const initPeerSync = async () => {
       try {
@@ -29,14 +38,21 @@ export default function Page(){
           return
         }
 
+        // Get WebRTC star URL from environment or use default for development
+        const starUrl = process.env.NEXT_PUBLIC_WEBRTC_STAR_URL || ''
+        
         const sync = await startPeerSync({
           topic: 'grahmos-sync-v1',
-          getKey: async () => deriveKey(passphrase),
+          starUrl: starUrl || undefined,
+          getKey: async () => {
+            const { key } = await deriveKey(passphrase)
+            return key
+          },
           onDoc: async (doc: Doc) => {
             console.log('Received doc via peer sync:', doc.id)
             await db.docs.put(doc)
             await addDocs([doc])
-            const windowWithSync = window as typeof window & { __sync?: { lastMessageTime: number } }
+            const windowWithSync = window as typeof window & { __sync?: { lastMessageTime: number; getDiagnostics?: () => unknown } }
             if (windowWithSync.__sync) {
               windowWithSync.__sync.lastMessageTime = Date.now()
             }
@@ -44,10 +60,11 @@ export default function Page(){
         })
 
         if (typeof window !== 'undefined') {
-          const windowWithSync = window as typeof window & { __sync: { publish: (doc: Doc) => Promise<void>; getPeers: () => number; lastMessageTime: number | null } }
+          const windowWithSync = window as typeof window & { __sync: { publish: (doc: Doc) => Promise<void>; getPeers: () => number; lastMessageTime: number | null; getDiagnostics: () => unknown } }
           windowWithSync.__sync = {
             publish: sync.publish,
             getPeers: sync.getPeers,
+            getDiagnostics: sync.getDiagnostics,
             lastMessageTime: null
           }
         }
@@ -59,7 +76,54 @@ export default function Page(){
     }
 
     initPeerSync()
+    
+    // Listen for visibility changes for auto battery profile
+    const handleVisibilityChange = async () => {
+      const currentProfile = await getBatteryProfile()
+      if (currentProfile === 'auto') {
+        const settings = await getAppSettings()
+        const effectiveProfile = await getAutoBatteryProfile(settings.redMode)
+        console.log(`Visibility changed, applying auto profile: ${effectiveProfile}`)
+        applyProfile('auto', settings.redMode)
+      }
+    }
+    
+    // Listen for network connection changes
+    const handleConnectionChange = async () => {
+      const currentProfile = await getBatteryProfile()
+      if (currentProfile === 'auto') {
+        const settings = await getAppSettings()
+        const effectiveProfile = await getAutoBatteryProfile(settings.redMode)
+        console.log(`Connection changed, applying auto profile: ${effectiveProfile}`)
+        applyProfile('auto', settings.redMode)
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    if ('connection' in navigator) {
+      (navigator as any).connection?.addEventListener?.('change', handleConnectionChange)
+    }
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if ('connection' in navigator) {
+        (navigator as any).connection?.removeEventListener?.('change', handleConnectionChange)
+      }
+    }
   }, [])
+  
+  // Handle red mode changes
+  useEffect(() => {
+    const updateProfileForRedMode = async () => {
+      const currentProfile = await getBatteryProfile()
+      if (currentProfile === 'auto') {
+        applyProfile('auto', redMode)
+      } else if (currentProfile === 'red' || redMode) {
+        applyProfile('red', redMode)
+      }
+    }
+    updateProfileForRedMode()
+  }, [redMode])
 
   const performSearch = useCallback(async () => {
     if(q.trim().length===0){ setResults([]); return }
@@ -71,6 +135,23 @@ export default function Page(){
     const t = setTimeout(performSearch, 150)
     return ()=>clearTimeout(t)
   },[performSearch])
+
+  // Derive unique categories from current results
+  const categories = useMemo(() => {
+    const cats = new Set<string>()
+    results.forEach(doc => {
+      if (doc.category && typeof doc.category === 'string') {
+        cats.add(doc.category)
+      }
+    })
+    return Array.from(cats).sort()
+  }, [results])
+
+  // Console log filter changes
+  const handleFiltersChange = useCallback((newFilters: Filters) => {
+    console.log('Filters value', newFilters)
+    setFilters(newFilters)
+  }, [])
 
   return (
     <div className="space-y-4">
@@ -107,6 +188,14 @@ export default function Page(){
             </span>
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
+          
+          {/* Filters Component */}
+          <FiltersComponent 
+            value={filters} 
+            onChange={handleFiltersChange} 
+            categories={categories} 
+          />
+          
           <ul className="divide-y divide-neutral-800 rounded-lg overflow-hidden border border-neutral-800">
             {results.map((r: Doc)=> (
               <li key={r.id} className="p-3 hover:bg-neutral-900 cursor-pointer" onClick={()=>setActivePath(r.url)}>

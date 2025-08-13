@@ -1,0 +1,14 @@
+🚀 DEVIN QUICK SETUP - COPY & PASTE THIS:
+
+# One command setup:
+git clone https://github.com/Greenmamba29/Grahmos.git ~/repos/Grahmos && cd ~/repos/Grahmos && npm install -g pnpm && pnpm install && echo "✅ Setup complete! Run 'pnpm dev' to start development"
+
+# Alternative step-by-step:
+git clone https://github.com/Greenmamba29/Grahmos.git ~/repos/Grahmos
+cd ~/repos/Grahmos  
+npm install -g pnpm
+pnpm install
+pnpm dev
+
+🎯 REPOSITORY STATUS: ✅ CLEAN - NO MERGE CONFLICTS
+📝 All git issues resolved - ready for development!

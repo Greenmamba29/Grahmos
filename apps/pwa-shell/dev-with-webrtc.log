@@ -1,0 +1,237 @@
+
+> pwa-shell@0.1.0 dev /Users/paco/Downloads/Grahmos/apps/pwa-shell
+> next dev
+
+   ▲ Next.js 15.4.6
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.169:3000
+   - Experiments (use with caution):
+     · esmExternals: "loose"
+
+ ✓ Starting...
+ ⚠ The "experimental.esmExternals" option has been modified. experimental.esmExternals is not recommended to be modified as it may disrupt module resolution. It should be removed from your next.config.js.
+ ✓ Ready in 3.6s
+ ○ Compiling /packs ...
+ ✓ Compiled /packs in 20.2s (2776 modules)
+ GET /packs 200 in 21092ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.5s (2796 modules)
+ GET / 200 in 3515ms
+ GET / 200 in 59ms
+ GET / 200 in 61ms
+ ✓ Compiled in 5.4s (1082 modules)
+ ✓ Compiled in 854ms (1082 modules)
+ ✓ Compiled in 755ms (1082 modules)
+ ✓ Compiled in 1184ms (1082 modules)
+ ✓ Compiled in 852ms (1082 modules)
+ ✓ Compiled in 3.4s (1082 modules)
+ ✓ Compiled in 766ms (1082 modules)
+ ✓ Compiled in 599ms (1082 modules)
+ ✓ Compiled in 701ms (1082 modules)
+ ✓ Compiled in 1144ms (1068 modules)
+ ✓ Compiled in 621ms (1068 modules)
+ ✓ Compiled in 436ms (1082 modules)
+ ✓ Compiled in 903ms (1082 modules)
+ ✓ Compiled in 806ms (1082 modules)
+ ✓ Compiled in 1717ms (1082 modules)
+ ✓ Compiled in 1241ms (1082 modules)
+ ✓ Compiled in 532ms (1082 modules)
+ ✓ Compiled in 4.7s (1082 modules)
+ ✓ Compiled in 1035ms (1068 modules)
+ ○ Compiling /packs ...
+ ✓ Compiled /packs in 2.4s (1702 modules)
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.]
+ ⨯ [Error [InvariantError]: Invariant: Expected clientReferenceManifest to be defined. This is a bug in Next.js.] {
+  page: '/packs'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 5.9s (3105 modules)
+ HEAD /packs 500 in 11571ms
+ ✓ Compiled in 3s (1222 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/9.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/9.pack.gz'
+ ✓ Compiled in 5.5s (1222 modules)
+ ✓ Compiled in 1071ms (1222 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 1654ms (1236 modules)
+ ✓ Compiled in 1063ms (1236 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 1882ms (1341 modules)
+ ✓ Compiled in 897ms (1236 modules)
+ ✓ Compiled in 580ms (1236 modules)
+ ✓ Compiled in 596ms (1236 modules)
+ ✓ Compiled in 704ms (1236 modules)
+ ✓ Compiled in 620ms (1236 modules)
+ ✓ Compiled in 1450ms (1222 modules)
+ ✓ Compiled in 907ms (1222 modules)
+ ✓ Compiled in 499ms (1236 modules)
+ ✓ Compiled in 462ms (1236 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 2s (1367 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 1535ms (1367 modules)
+ ✓ Compiled in 1013ms (1236 modules)
+ ✓ Compiled in 482ms (1236 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 2.8s (1828 modules)
+ GET / 200 in 4245ms
+ GET / 200 in 44ms
+ GET / 200 in 355ms
+ GET / 200 in 360ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1144ms (3055 modules)
+ GET /_next/static/chunks/main-app.js?v=1755088661198 404 in 1802ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 1792ms
+ GET /_next/static/chunks/main-app.js?v=1755088661198 404 in 1690ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 1690ms
+ ○ Compiling /packs ...
+ ✓ Compiled /packs in 1630ms (1835 modules)
+ GET /packs 200 in 2182ms
+ GET /packs 200 in 2200ms
+ GET /_next/static/chunks/main-app.js?v=1755088665640 404 in 251ms
+ GET /_next/static/chunks/main-app.js?v=1755088665639 404 in 251ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 249ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 251ms
+ GET / 200 in 1053ms
+ GET /_next/static/chunks/main-app.js?v=1755088684913 404 in 351ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 342ms
+ GET / 200 in 107ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 3.2s (3078 modules)
+ GET /favicon.ico 200 in 3282ms
+ GET /_next/static/chunks/main-app.js?v=1755088686496 404 in 4419ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 4417ms
+ GET /packs 200 in 2425ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 183ms
+ GET /_next/static/chunks/main-app.js?v=1755088691576 404 in 89ms
+ GET /favicon.ico 200 in 25ms
+ GET /packs 200 in 79ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 221ms
+ GET /_next/static/chunks/main-app.js?v=1755088692537 404 in 100ms
+ GET / 200 in 306ms
+ GET / 200 in 666ms
+ GET /_next/static/chunks/main-app.js?v=1755088722856 404 in 449ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 502ms
+ GET /_next/static/chunks/main-app.js?v=1755088723133 404 in 368ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 330ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 219ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 222ms
+ GET /_next/static/chunks/main-app.js?v=1755088724961 404 in 225ms
+ GET /_next/static/chunks/main-app.js?v=1755088724962 404 in 222ms
+ GET /packs 200 in 427ms
+ GET /packs 200 in 427ms
+ ✓ Compiled in 1519ms (1240 modules)
+ GET / 200 in 267ms
+ GET / 200 in 287ms
+ ✓ Compiled in 811ms (1240 modules)
+ GET / 200 in 276ms
+ GET /_next/static/chunks/main-app.js?v=1755088775169 404 in 251ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 255ms
+ GET /packs 200 in 187ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 115ms
+ GET /_next/static/chunks/main-app.js?v=1755088776699 404 in 121ms
+ ✓ Compiled in 957ms (1240 modules)
+ ✓ Compiled in 447ms (1240 modules)
+ ✓ Compiled in 448ms (1240 modules)
+ GET / 200 in 185ms
+ GET / 200 in 205ms
+ ✓ Compiled in 595ms (1240 modules)
+ GET / 200 in 146ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 147ms
+ GET /_next/static/chunks/main-app.js?v=1755088805106 404 in 176ms
+ GET /packs 200 in 185ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 107ms
+ GET /_next/static/chunks/main-app.js?v=1755088806930 404 in 110ms
+ ✓ Compiled in 757ms (1240 modules)
+ ✓ Compiled in 461ms (1240 modules)
+ GET / 200 in 194ms
+ ⨯ SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>) {
+  page: '/'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 3.2s (3148 modules)
+ GET / 500 in 3514ms
+ GET / 200 in 808ms
+ GET /packs 200 in 317ms
+ GET /_next/static/chunks/main-app.js?v=1755088851898 404 in 466ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 480ms
+ GET / 200 in 541ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 220ms
+ GET /_next/static/chunks/main-app.js?v=1755088852116 404 in 232ms
+ GET / 200 in 229ms
+ GET /_next/static/chunks/main-app.js?v=1755088855761 404 in 140ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 136ms
+ GET /packs 200 in 229ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 137ms
+ GET /_next/static/chunks/main-app.js?v=1755088859596 404 in 158ms
+ GET / 200 in 226ms
+ GET /_next/static/chunks/main-app.js?v=1755088862964 404 in 175ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 176ms
+ ✓ Compiled in 767ms (1241 modules)
+ GET / 200 in 253ms
+ GET / 200 in 159ms
+ ✓ Compiled in 835ms (1241 modules)
+ ✓ Compiled in 355ms (1227 modules)
+ GET /packs 200 in 266ms
+ GET /_next/static/chunks/main-app.js?v=1755088899760 404 in 544ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 536ms
+ GET / 200 in 586ms
+ GET /_next/static/chunks/main-app.js?v=1755088899943 404 in 272ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 265ms
+ GET / 200 in 459ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 241ms
+ GET /_next/static/chunks/main-app.js?v=1755088904690 404 in 271ms
+ GET / 200 in 407ms
+ GET /_next/static/chunks/main-app.js?v=1755088905087 404 in 172ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 182ms
+ GET /packs 200 in 232ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 152ms
+ GET /_next/static/chunks/main-app.js?v=1755088907136 404 in 163ms
+ GET / 200 in 180ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 113ms
+ GET /_next/static/chunks/main-app.js?v=1755088907930 404 in 114ms
+ GET / 200 in 1359ms
+ GET /_next/static/chunks/main-app.js?v=1755088910364 404 in 148ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 142ms
+ ✓ Compiled in 898ms (1240 modules)
+ ✓ Compiled in 647ms (1240 modules)
+ ✓ Compiled in 433ms (1240 modules)
+ GET / 200 in 438ms
+ GET / 200 in 46ms
+ GET /packs 200 in 131ms
+ GET /_next/static/chunks/main-app.js?v=1755088934121 404 in 415ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 424ms
+ GET / 200 in 473ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 219ms
+ GET /_next/static/chunks/main-app.js?v=1755088934247 404 in 221ms
+ GET / 200 in 185ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 101ms
+ GET /_next/static/chunks/main-app.js?v=1755088937456 404 in 123ms
+ GET / 200 in 246ms
+ GET /_next/static/chunks/main-app.js?v=1755088938921 404 in 127ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 121ms
+ GET /packs 200 in 290ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 253ms
+ GET /_next/static/chunks/main-app.js?v=1755088940353 404 in 257ms
+ GET / 200 in 200ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 162ms
+ GET /_next/static/chunks/main-app.js?v=1755088940888 404 in 170ms
+ GET / 200 in 469ms
+ GET /_next/static/chunks/main-app.js?v=1755088941385 404 in 307ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 310ms
+ ✓ Compiled in 695ms (1240 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/1.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/1.pack.gz'
+ ✓ Compiled in 4.4s (1367 modules)
+ ✓ Compiled in 703ms (1236 modules)
+ ✓ Compiled in 1161ms (1222 modules)
+ ✓ Compiled in 667ms (1222 modules)
+ ✓ Compiled in 1498ms (1236 modules)
+ ✓ Compiled in 625ms (1236 modules)
+ ✓ Compiled in 813ms (1236 modules)
+ ✓ Compiled in 1374ms (1236 modules)
+ ✓ Compiled in 1405ms (1222 modules)
+ ✓ Compiled in 1320ms (1236 modules)
+ ○ Compiling /settings ...
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled /settings in 14.4s (3046 modules)
+ GET /settings 200 in 18105ms

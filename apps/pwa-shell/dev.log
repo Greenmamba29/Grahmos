@@ -1,0 +1,63 @@
+
+> pwa-shell@0.1.0 dev /Users/paco/Downloads/Grahmos/apps/pwa-shell
+> next dev
+
+ ⚠ Port 3000 is in use by process 79590, using available port 3001 instead.
+   ▲ Next.js 15.4.6
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.1.169:3001
+   - Experiments (use with caution):
+     · esmExternals: "loose"
+
+ ✓ Starting...
+ ⚠ The "experimental.esmExternals" option has been modified. experimental.esmExternals is not recommended to be modified as it may disrupt module resolution. It should be removed from your next.config.js.
+ ✓ Ready in 4.5s
+ ○ Compiling /packs ...
+ ✓ Compiled /packs in 25.8s (2776 modules)
+ HEAD /packs 200 in 26889ms
+ ✓ Compiled in 3.1s (1074 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Restoring pack failed from /Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development.pack.gz: Error: unexpected end of file
+ ✓ Compiled in 4.3s (1060 modules)
+ ✓ Compiled in 894ms (1060 modules)
+ ✓ Compiled in 1300ms (1074 modules)
+ ✓ Compiled in 1144ms (1074 modules)
+ ✓ Compiled in 952ms (1074 modules)
+ ✓ Compiled in 883ms (1074 modules)
+ ✓ Compiled in 561ms (1074 modules)
+ ✓ Compiled in 624ms (1074 modules)
+ ✓ Compiled in 809ms (1074 modules)
+ ✓ Compiled in 640ms (1074 modules)
+ ✓ Compiled in 1222ms (1060 modules)
+ ✓ Compiled in 940ms (1060 modules)
+ ✓ Compiled in 462ms (1074 modules)
+ ✓ Compiled in 475ms (1074 modules)
+ ✓ Compiled in 1080ms (1074 modules)
+ ✓ Compiled in 766ms (1074 modules)
+ ✓ Compiled in 786ms (1074 modules)
+ ✓ Compiled in 531ms (1074 modules)
+ ✓ Compiled in 1267ms (1074 modules)
+ ✓ Compiled in 452ms (1074 modules)
+ ✓ Compiled in 697ms (1074 modules)
+ ✓ Compiled in 548ms (1074 modules)
+ ✓ Compiled in 395ms (1074 modules)
+ ✓ Compiled in 306ms (1074 modules)
+ ✓ Compiled in 643ms (1074 modules)
+ ✓ Compiled in 316ms (1074 modules)
+ ✓ Compiled in 653ms (1074 modules)
+ ✓ Compiled in 831ms (1074 modules)
+ ✓ Compiled in 345ms (1074 modules)
+ ✓ Compiled in 1022ms (1074 modules)
+ ✓ Compiled in 606ms (1074 modules)
+ ✓ Compiled in 469ms (1074 modules)
+ ✓ Compiled in 652ms (1074 modules)
+ ✓ Compiled in 2.1s (1074 modules)
+ ✓ Compiled in 911ms (1074 modules)
+ ✓ Compiled in 1204ms (1060 modules)
+ ✓ Compiled in 540ms (1060 modules)
+ ✓ Compiled in 1138ms (1074 modules)
+ ✓ Compiled in 510ms (1074 modules)
+ ✓ Compiled in 881ms (1074 modules)
+ ✓ Compiled in 1338ms (1074 modules)
+ ✓ Compiled in 829ms (1060 modules)
+ ✓ Compiled in 1341ms (1074 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz'

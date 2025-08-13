@@ -4,7 +4,7 @@ function isSafePath(p: string) {
   return p.startsWith('/') && !p.startsWith('//') && !p.includes('://') && !p.includes('..')
 }
 
-function rewriteHtml(html: string, _endpoint: string) {
+function rewriteHtml(html: string) {
   return html.replace(/(src|href)=(["'])(\/?[^"'>]+)\2/gi, (_m, attr, q, val) => {
     if (!val || val.startsWith('data:') || val.startsWith('mailto:') || val.startsWith('javascript:')) return _m
     if (val.startsWith('http://') || val.startsWith('https://')) return _m
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   const body = await upstream.arrayBuffer()
 
   if (ct.includes('text/html')) {
-    const rewritten = rewriteHtml(new TextDecoder().decode(body), endpoint)
+    const rewritten = rewriteHtml(new TextDecoder().decode(body))
     return new Response(rewritten, { headers: { 'content-type': 'text/html; charset=utf-8' } })
   }
   return new Response(body, { headers: { 'content-type': ct || 'application/octet-stream' } })

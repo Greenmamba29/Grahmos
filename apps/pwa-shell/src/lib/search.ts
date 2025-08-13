@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as Search from '../../../../packages/search-core/src'
 
-export type Doc = { id:string; title:string; url:string; summary?:string }
+export type Doc = { id:string; title:string; url:string; summary?:string; category?:string }
 
 export function useOfflineSearch(){
   const ready = useRef(false)
