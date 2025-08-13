@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import type { Map } from 'maplibre-gl'
 
 export default function MapsPage() {
   const mapContainer = useRef<HTMLDivElement>(null)
-  const map = useRef<any>(null)
+  const map = useRef<Map | null>(null)
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return
