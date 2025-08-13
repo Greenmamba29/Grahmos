@@ -1,7 +1,7 @@
 'use client'
 import { db, type PurchaseIntent } from '../../../../packages/local-db/src/db'
 
-export async function enqueuePurchase(payload:any){
+export async function enqueuePurchase(payload: unknown){
   const id = 'pi_' + Math.random().toString(36).slice(2)
   const intent: PurchaseIntent = { id, ts: Date.now(), payload, status: 'queued' }
   await db.purchaseQueue.put(intent)
@@ -21,8 +21,9 @@ export async function flushPurchases(pubkeyB64:string){
       if (!ok) throw new Error('bad receipt signature')
       await db.receipts.put({ id: receipt.orderId, intentId: it.id, ts: receipt.ts, payload: receipt, sig })
       await db.purchaseQueue.update(it.id, { status: 'ok' })
-    } catch(e:any){
-      await db.purchaseQueue.update(it.id, { status: 'queued', lastError: e.message || String(e) })
+    } catch(e: unknown){
+      const errorMessage = e instanceof Error ? e.message : String(e)
+      await db.purchaseQueue.update(it.id, { status: 'queued', lastError: errorMessage })
     }
   }
 }
