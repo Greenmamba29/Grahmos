@@ -1,0 +1,19 @@
+{
+  "name": "local-db",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/db.ts",
+  "type": "module",
+  "exports": {
+    ".": "./src/db.ts"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dexie": "^4.0.11"
+  }
+}

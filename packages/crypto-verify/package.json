@@ -1,0 +1,20 @@
+{
+  "name": "crypto-verify",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/verify.ts",
+  "type": "module",
+  "exports": {
+    ".": "./src/verify.ts"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
+  }
+}
