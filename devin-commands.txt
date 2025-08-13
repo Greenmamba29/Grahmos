@@ -1,0 +1,34 @@
+DEVIN FILE ACCESS COMMANDS
+==========================
+
+🎯 DIRECT FILE ACCESS:
+File Location: /Users/paco/Downloads/grahmos-source-code.tar.gz
+File Size: 224M
+MD5: 492670f0607bce9ef8a805d11794c884
+
+📋 QUICK COMMANDS FOR DEVIN:
+
+1. Copy to current directory:
+   cp /Users/paco/Downloads/grahmos-source-code.tar.gz .
+
+2. Extract to temp directory:
+   mkdir -p /tmp/grahmos-extracted
+   tar -xzf /Users/paco/Downloads/grahmos-source-code.tar.gz -C /tmp/grahmos-extracted
+
+3. Extract to current directory:
+   tar -xzf /Users/paco/Downloads/grahmos-source-code.tar.gz
+
+4. List contents without extracting:
+   tar -tzf /Users/paco/Downloads/grahmos-source-code.tar.gz | head -20
+
+🔗 ALTERNATIVE ACCESS:
+GitHub Repo: https://github.com/Greenmamba29/Grahmos
+Current Directory: /Users/paco/Downloads/Grahmos
+
+🛠️ PROJECT TECH STACK:
+- Next.js 15 + React 19 + Tailwind CSS
+- pnpm + Turbo (monorepo)
+- P2P: libp2p + IPFS/Helia
+- Edge: Cloudflare Workers
+- DB: Dexie (IndexedDB)
+- Crypto: TweetNaCl
