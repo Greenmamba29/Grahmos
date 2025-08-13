@@ -235,3 +235,11 @@
 <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz'
  ✓ Compiled /settings in 14.4s (3046 modules)
  GET /settings 200 in 18105ms
+ ✓ Compiled in 25.1s (1355 modules)
+ ✓ Compiled in 6.7s (1355 modules)
+ ✓ Compiled in 3s (1238 modules)
+ ✓ Compiled in 9.7s (1355 modules)
+ ✓ Compiled in 2.6s (1238 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/paco/Downloads/Grahmos/apps/pwa-shell/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 12.7s (1224 modules)
+ ✓ Compiled in 4.9s (1238 modules)

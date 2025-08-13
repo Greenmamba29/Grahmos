@@ -5,7 +5,7 @@ import { useOfflineSearch, type Doc } from '@/lib/search'
 import PurchaseModal from './purchase/PurchaseModal'
 import FiltersComponent from './(components)/Filters'
 import { getAppSettings, getSyncPassphrase, getBatteryProfile, getAutoBatteryProfile } from '../lib/settings'
-import { startPeerSync, deriveKey, updateCadence, applyProfile } from '../../../../packages/p2p-delta/src/peerSync'
+import { startPeerSync, deriveKey, applyProfile } from '../../../../packages/p2p-delta/src/peerSync'
 import { db } from '../../../../packages/local-db/src/db'
 import { addDocs } from '../../../../packages/search-core/src'
 import { Filters } from '../lib/filters'
@@ -18,7 +18,7 @@ export default function Page(){
   const [activePath,setActivePath] = useState<string | null>(null)
   const [showBuy, setShowBuy] = useState(false)
   const [redMode, setRedMode] = useState(false)
-  const [batteryProfile, setBatteryProfile] = useState<'normal' | 'red' | 'lowPower' | 'auto'>('auto')
+  const [, setBatteryProfile] = useState<'normal' | 'red' | 'lowPower' | 'auto'>('auto')
   const [filters, setFilters] = useState<Filters>({ category: [], availability: 'any' })
   const iframeRef = useRef<HTMLIFrameElement|null>(null)
 
@@ -101,13 +101,13 @@ export default function Page(){
     
     document.addEventListener('visibilitychange', handleVisibilityChange)
     if ('connection' in navigator) {
-      (navigator as any).connection?.addEventListener?.('change', handleConnectionChange)
+(navigator as { connection?: { addEventListener?: (event: string, callback: () => void) => void } }).connection?.addEventListener?.('change', handleConnectionChange)
     }
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       if ('connection' in navigator) {
-        (navigator as any).connection?.removeEventListener?.('change', handleConnectionChange)
+(navigator as { connection?: { removeEventListener?: (event: string, callback: () => void) => void } }).connection?.removeEventListener?.('change', handleConnectionChange)
       }
     }
   }, [])

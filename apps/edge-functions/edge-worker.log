@@ -1,0 +1,28 @@
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
+
+ ⛅️ wrangler 4.29.0 (update available 4.29.1)
+─────────────────────────────────────────────
+Your Worker has access to the following bindings:
+Binding                                                                   Resource                  Mode
+env.ORDERS (orders_kv_preview)                                            KV Namespace              local
+env.STRIPE_MODE ("test")                                                  Environment Variable      local
+env.RECEIPT_KEY_ID ("key_2025_01")                                        Environment Variable      local
+env.RECEIPT_PUBLIC_KEY ("R2x0r734631W9spz9AII2DQuJLByESkMRfbJR...")       Environment Variable      local
+env.RECEIPT_PRIVATE_KEY ("CO+VqjJ8EfRJG0+PLFuu9q3KeGAyUBz1Kl/8/...")      Environment Variable      local
+
+⎔ Starting local server...
+[wrangler:info] Ready on http://localhost:8787
+[wrangler:info] GET /pubkey 200 OK (8ms)
+[wrangler:info] POST /purchase 400 Bad Request (5ms)
+[wrangler:info] POST /purchase 400 Bad Request (4ms)
+[wrangler:info] POST /purchase 400 Bad Request (12ms)
+[wrangler:info] POST /purchase 200 OK (181ms)
+[wrangler:info] POST /purchase 200 OK (71ms)
+[wrangler:info] POST /purchase 200 OK (47ms)
+[wrangler:info] POST /purchase 200 OK (11ms)
+[wrangler:info] GET /pubkey 200 OK (8ms)
+[wrangler:info] POST /purchase 400 Bad Request (27ms)
+[wrangler:info] POST /purchase 400 Bad Request (7ms)
+[wrangler:info] GET /pubkey 200 OK (37ms)
+[wrangler:info] POST /purchase 200 OK (95ms)

@@ -94,6 +94,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   Packs
                 </Link>
                 <Link 
+                  href="/orders" 
+                  className={`text-sm px-3 py-2 rounded transition-colors ${
+                    pathname === '/orders' 
+                      ? 'bg-neutral-800 text-white' 
+                      : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'
+                  }`}
+                >
+                  Orders
+                </Link>
+                <Link 
                   href="/settings" 
                   className={`text-sm px-3 py-2 rounded transition-colors ${
                     pathname === '/settings' 

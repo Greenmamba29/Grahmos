@@ -2,5 +2,12 @@ name = "grahmos-edge"
 main = "src/index.ts"
 compatibility_date = "2025-08-01"
 [vars]
+STRIPE_MODE = "test"
+RECEIPT_KEY_ID = "key_2025_01"
 RECEIPT_PUBLIC_KEY = "R2x0r734631W9spz9AII2DQuJLByESkMRfbJRiIV30g="
 RECEIPT_PRIVATE_KEY = "CO+VqjJ8EfRJG0+PLFuu9q3KeGAyUBz1Kl/8//xVDz1HbHSvvfjrfVb2ynP0AgjYNC4ksHIRKQxF9slGIhXfSA=="
+
+[[kv_namespaces]]
+binding = "ORDERS"
+id = "orders_kv"
+preview_id = "orders_kv_preview"

@@ -48,7 +48,7 @@ export async function setBatteryProfile(profile: 'normal' | 'red' | 'lowPower' |
 
 export async function getAutoBatteryProfile(redMode?: boolean): Promise<'normal' | 'red' | 'lowPower'> {
   // Check saveData hint
-  const connection = (navigator as any).connection
+  const connection = (navigator as { connection?: { saveData?: boolean } }).connection
   if (connection?.saveData === true) {
     return 'lowPower'
   }

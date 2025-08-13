@@ -1,0 +1,17 @@
+
+> pwa-shell@0.1.0 dev /Users/paco/Downloads/Grahmos/apps/pwa-shell
+> next dev "--port" "3002"
+
+   ▲ Next.js 15.4.6
+   - Local:        http://localhost:3002
+   - Network:      http://192.168.1.169:3002
+   - Experiments (use with caution):
+     · esmExternals: "loose"
+
+ ✓ Starting...
+ ⚠ The "experimental.esmExternals" option has been modified. experimental.esmExternals is not recommended to be modified as it may disrupt module resolution. It should be removed from your next.config.js.
+ ✓ Ready in 6.3s
+ ○ Compiling /orders ...
+ ✓ Compiled /orders in 40.1s (2776 modules)
+ GET /orders 200 in 41236ms
+[?25h

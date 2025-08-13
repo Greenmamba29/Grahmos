@@ -22,10 +22,12 @@ export interface ContentPack {
   installedAt: number;
   status: 'installing' | 'installed' | 'failed';
   opfsPath?: string;
+  verificationStatus?: 'valid' | 'invalid' | 'pending';
+  verifiedAt?: number;
 }
 export interface Delta { id:string; ts:number; payload:any; sig:string }
 export interface PurchaseIntent { id:string; ts:number; payload:any; status:'queued'|'sending'|'ok'|'err'; lastError?: string }
-export interface Receipt { id:string; intentId:string; ts:number; payload:any; sig:string }
+export interface Receipt { id:string; intentId:string; ts:number; payload:any; sig:string; keyId?: string; status?: 'verified' | 'invalid' | 'pending' }
 export interface RecentMessage { msgId: string; ts: number }
 export interface KeySalt { id: string; salt: Uint8Array; createdAt: number }
 

@@ -41,8 +41,8 @@ test.describe('Feature Demonstration Tests', () => {
     }
 
     // Should show either loading state or no packs message
-    const bodyText = await page.textContent('body');
-    const hasLoadingOrNoPacks = bodyText.includes('Loading...') || bodyText.includes('No content packs installed');
+    const bodyText = await page.locator('body').textContent();
+    const hasLoadingOrNoPacks = bodyText?.includes('Loading...') || bodyText?.includes('No content packs installed');
     expect(hasLoadingOrNoPacks).toBe(true);
   });
 
