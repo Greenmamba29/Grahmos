@@ -1,5 +1,3 @@
-import { db } from '../../../../../packages/local-db/src/db'
-
 export interface AppSettings {
   redMode: boolean;
 }
