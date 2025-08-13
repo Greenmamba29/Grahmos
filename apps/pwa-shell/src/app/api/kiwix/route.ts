@@ -4,7 +4,7 @@ function isSafePath(p: string) {
   return p.startsWith('/') && !p.startsWith('//') && !p.includes('://') && !p.includes('..')
 }
 
-function rewriteHtml(html: string, endpoint: string) {
+function rewriteHtml(html: string, _endpoint: string) {
   return html.replace(/(src|href)=(["'])(\/?[^"'>]+)\2/gi, (_m, attr, q, val) => {
     if (!val || val.startsWith('data:') || val.startsWith('mailto:') || val.startsWith('javascript:')) return _m
     if (val.startsWith('http://') || val.startsWith('https://')) return _m
