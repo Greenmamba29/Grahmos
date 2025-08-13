@@ -7,14 +7,19 @@
     "packages/*"
   ],
   "scripts": {
+    "build": "pnpm -r build",
     "dev": "turbo run dev --parallel",
     "dev:kiwix": "cd apps/kiwix-serve && docker compose up",
     "dev:edge": "cd apps/edge-functions && wrangler dev",
-    "dev:pwa": "cd apps/pwa-shell && pnpm dev"
+    "dev:pwa": "cd apps/pwa-shell && pnpm dev",
+    "release:rc": "git tag -a v0.1.0-rc$(date +%H%M) -m 'Release candidate'",
+    "release:promote": "npx tsx scripts/release-promote.ts --from v0.1.0-rc1 --to v0.1.0"
   },
   "devDependencies": {
     "pnpm": "^10.14.0",
-    "turbo": "^2.5.5"
+    "tsx": "^4.16.2",
+    "turbo": "^2.5.5",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "@chainsafe/libp2p-gossipsub": "^14.1.1",
