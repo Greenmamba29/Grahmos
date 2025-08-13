@@ -1,0 +1,87 @@
+[submodule "third_party/kiwix-tools"]
+	path = third_party/kiwix-tools
+	url = https://github.com/kiwix/kiwix-tools.git
+[submodule "third_party/libzim"]
+	path = third_party/libzim
+	url = https://github.com/openzim/libzim.git
+[submodule "third_party/zim-tools"]
+	path = third_party/zim-tools
+	url = https://github.com/openzim/zim-tools.git
+[submodule "third_party/mwoffliner"]
+	path = third_party/mwoffliner
+	url = https://github.com/openzim/mwoffliner.git
+[submodule "third_party/zimit"]
+	path = third_party/zimit
+	url = https://github.com/openzim/zimit.git
+[submodule "third_party/zimwriterfs"]
+	path = third_party/zimwriterfs
+	url = https://github.com/openzim/zimwriterfs.git
+[submodule "third_party/kiwix-js"]
+	path = third_party/kiwix-js
+	url = https://github.com/kiwix/kiwix-js.git
+[submodule "third_party/hypercore-protocol"]
+	path = third_party/hypercore-protocol
+	url = https://github.com/hypercore-protocol/hypercore-protocol.git
+[submodule "third_party/hyperbee"]
+	path = third_party/hyperbee
+	url = https://github.com/holepunchto/hyperbee.git
+[submodule "third_party/hyperswarm"]
+	path = third_party/hyperswarm
+	url = https://github.com/holepunchto/hyperswarm.git
+[submodule "third_party/helia"]
+	path = third_party/helia
+	url = https://github.com/ipfs/helia.git
+[submodule "third_party/helia-examples"]
+	path = third_party/helia-examples
+	url = https://github.com/ipfs-examples/helia-examples.git
+[submodule "third_party/reticulum"]
+	path = third_party/reticulum
+	url = https://github.com/markqvist/Reticulum.git
+[submodule "third_party/tantivy"]
+	path = third_party/tantivy
+	url = https://github.com/quickwit-oss/tantivy.git
+[submodule "third_party/dexie"]
+	path = third_party/dexie
+	url = https://github.com/dexie/Dexie.js.git
+[submodule "third_party/sql.js"]
+	path = third_party/sql.js
+	url = https://github.com/sql-js/sql.js.git
+[submodule "third_party/automerge"]
+	path = third_party/automerge
+	url = https://github.com/automerge/automerge.git
+[submodule "third_party/yjs"]
+	path = third_party/yjs
+	url = https://github.com/yjs/yjs.git
+[submodule "third_party/workbox"]
+	path = third_party/workbox
+	url = https://github.com/GoogleChrome/workbox.git
+[submodule "third_party/archivebox"]
+	path = third_party/archivebox
+	url = https://github.com/ArchiveBox/ArchiveBox.git
+[submodule "third_party/minisign"]
+	path = third_party/minisign
+	url = https://github.com/jedisct1/minisign.git
+[submodule "third_party/age"]
+	path = third_party/age
+	url = https://github.com/FiloSottile/age.git
+[submodule "third_party/tweetnacl-js"]
+	path = third_party/tweetnacl-js
+	url = https://github.com/dchest/tweetnacl-js.git
+[submodule "third_party/webcrypto"]
+	path = third_party/webcrypto
+	url = https://github.com/PeculiarVentures/webcrypto.git
+[submodule "third_party/maplibre-gl-js"]
+	path = third_party/maplibre-gl-js
+	url = https://github.com/maplibre/maplibre-gl-js.git
+[submodule "third_party/tileserver-gl"]
+	path = third_party/tileserver-gl
+	url = https://github.com/maptiler/tileserver-gl.git
+[submodule "third_party/pmtiles"]
+	path = third_party/pmtiles
+	url = https://github.com/protomaps/PMTiles.git
+[submodule "third_party/capacitor"]
+	path = third_party/capacitor
+	url = https://github.com/ionic-team/capacitor.git
+[submodule "third_party/tauri"]
+	path = third_party/tauri
+	url = https://github.com/tauri-apps/tauri.git

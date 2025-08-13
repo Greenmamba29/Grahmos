@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  kiwix:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../../data/zim:/data/zim:ro
+      - ../../data/library:/data/library:ro
