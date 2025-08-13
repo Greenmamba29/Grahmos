@@ -1,7 +1,7 @@
 // Test script to add a content pack for verification testing
 // This creates both valid and invalid test packs for testing
 
-import { db, ContentPack } from '../../../../../packages/local-db/src/db'
+import { db, ContentPack } from '../../../../packages/local-db/src/db'
 import nacl from 'tweetnacl'
 import util from 'tweetnacl-util'
 
@@ -20,7 +20,7 @@ const testPackData = {
 }
 
 // Create signature for the test pack
-function createTestPackSignature(packData: any): string {
+function createTestPackSignature(packData: Record<string, unknown>): string {
   const payloadString = JSON.stringify(packData, Object.keys(packData).sort())
   const messageBytes = util.decodeUTF8(payloadString)
   const signature = nacl.sign.detached(messageBytes, TEST_PRIVATE_KEY)
@@ -119,8 +119,8 @@ async function removeTestPacks() {
 
 // Self-executing functions for browser console
 if (typeof window !== 'undefined') {
-  (window as any).addTestPacks = addTestPacks
-  (window as any).removeTestPacks = removeTestPacks
+  (window as unknown as { addTestPacks: typeof addTestPacks; removeTestPacks: typeof removeTestPacks }).addTestPacks = addTestPacks;
+  (window as unknown as { addTestPacks: typeof addTestPacks; removeTestPacks: typeof removeTestPacks }).removeTestPacks = removeTestPacks
   console.log('Test pack functions available:')
   console.log('- window.addTestPacks() - Add test packs with different verification scenarios')
   console.log('- window.removeTestPacks() - Remove all test packs')
