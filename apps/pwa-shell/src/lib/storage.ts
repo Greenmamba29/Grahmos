@@ -175,19 +175,30 @@ async function deleteOPFSFiles(pack: { id: string; opfsPath?: string; opfsHandle
 
 export async function verifyPack(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`Verifying pack: ${id}`)
+    console.log(`🔍 Starting pack verification for: ${id}`)
     
     const pack = await db.contentPacks.get(id)
     if (!pack) {
-      return { success: false, error: 'Pack not found' }
+      console.warn(`❌ Pack not found in database: ${id}`)
+      return { success: false, error: 'Pack not found in database' }
     }
     
+    console.log(`📦 Found pack:`, {
+      id: pack.id,
+      name: pack.name,
+      hasSignature: !!pack.sigB64,
+      hasPubkey: !!pack.pubkey,
+      currentStatus: pack.verificationStatus
+    })
+    
     if (!pack.sigB64) {
-      return { success: false, error: 'Pack has no signature' }
+      console.warn(`❌ Pack ${id} has no signature`)
+      return { success: false, error: 'Pack has no signature - cannot verify unsigned content' }
     }
     
     if (!pack.pubkey) {
-      return { success: false, error: 'Pack has no public key' }
+      console.warn(`❌ Pack ${id} has no public key`)
+      return { success: false, error: 'Pack has no public key - verification requires a trusted public key' }
     }
     
     // Create verification payload (pack metadata for signature)
@@ -195,31 +206,40 @@ export async function verifyPack(id: string): Promise<{ success: boolean; error?
       id: pack.id,
       name: pack.name,
       size: pack.size,
+      sha256: pack.sha256,
+      keyId: pack.keyId
       // Add other relevant fields that should be covered by signature
     }
     
+    const payloadString = JSON.stringify(verificationPayload, Object.keys(verificationPayload).sort())
+    console.log(`📝 Verification payload:`, payloadString)
+    console.log(`🔑 Using public key: ${pack.pubkey.substring(0, 16)}...`)
+    
     // Verify signature using minisign-compatible verification
-    const isValid = await verify(pack.pubkey, JSON.stringify(verificationPayload), pack.sigB64)
+    const isValid = await verify(pack.pubkey, payloadString, pack.sigB64)
+    console.log(`🔐 Signature verification result: ${isValid}`)
     
     if (isValid) {
-      // Update verification timestamp
+      // Update verification timestamp and status
+      const verifiedAt = Date.now()
       await db.contentPacks.update(id, { 
-        verifiedAt: Date.now(),
+        verifiedAt,
         verificationStatus: 'valid'
       })
-      console.log(`Pack ${id} signature verified successfully`)
+      console.log(`✅ Pack ${id} signature verified successfully at ${new Date(verifiedAt).toISOString()}`)
       return { success: true }
     } else {
       await db.contentPacks.update(id, { 
         verificationStatus: 'invalid'
       })
-      console.log(`Pack ${id} signature verification failed`)
-      return { success: false, error: 'Signature verification failed' }
+      console.log(`❌ Pack ${id} signature verification failed - signature does not match`)
+      return { success: false, error: 'Signature verification failed - the pack may have been tampered with' }
     }
     
   } catch (error) {
-    console.error(`Error verifying pack ${id}:`, error)
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    console.error(`💥 Error during pack verification for ${id}:`, error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown verification error'
+    return { success: false, error: `Verification error: ${errorMessage}` }
   }
 }
 

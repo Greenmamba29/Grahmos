@@ -3,6 +3,11 @@ import { useState, useEffect } from 'react'
 import { ContentPack, db } from '../../../../../packages/local-db/src/db'
 import { getStorageUsage, removePack, verifyPack, StorageInfo } from '../../lib/storage'
 
+// Import test functions for development (only in browser)
+if (typeof window !== 'undefined') {
+  import('../../scripts/add-test-pack')
+}
+
 export default function PacksPage() {
   const [packs, setPacks] = useState<ContentPack[]>([])
   const [storageInfo, setStorageInfo] = useState<StorageInfo>({ used: 0 })
@@ -56,20 +61,24 @@ export default function PacksPage() {
   async function handleVerifyPack(packId: string) {
     try {
       setVerifying(packId)
+      console.log(`Starting verification for pack: ${packId}`)
+      
       const result = await verifyPack(packId)
+      console.log(`Verification result for pack ${packId}:`, result)
       
       if (result.success) {
-        setToast('Pack signature verified successfully ✅')
+        setToast('🔒 Pack signature verified successfully ✅')
       } else {
-        setToast(`Pack verification failed: ${result.error || 'Unknown error'} ❌`)
+        setToast(`🚫 Pack verification failed: ${result.error || 'Unknown error'} ❌`)
       }
-      setTimeout(() => setToast(null), 5000)
+      setTimeout(() => setToast(null), 6000) // Slightly longer for verification messages
       
       await loadData() // Refresh the data to show updated verification status
     } catch (error) {
       console.error('Error verifying pack:', error)
-      setToast('Failed to verify pack. Please try again. ❌')
-      setTimeout(() => setToast(null), 5000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      setToast(`🚫 Verification failed: ${errorMessage} ❌`)
+      setTimeout(() => setToast(null), 6000)
     } finally {
       setVerifying(null)
     }
@@ -100,12 +109,30 @@ export default function PacksPage() {
       
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-4 right-4 bg-green-900/90 border border-green-700 rounded-lg p-4 shadow-lg z-50">
+        <div className={`fixed top-4 right-4 rounded-lg p-4 shadow-lg z-50 ${
+          toast.includes('❌') || toast.includes('failed')
+            ? 'bg-red-900/90 border border-red-700'
+            : toast.includes('✅') || toast.includes('verified')
+            ? 'bg-green-900/90 border border-green-700'
+            : 'bg-blue-900/90 border border-blue-700'
+        }`}>
           <div className="flex items-center">
-            <div className="text-green-200 text-sm">{toast}</div>
+            <div className={`text-sm ${
+              toast.includes('❌') || toast.includes('failed')
+                ? 'text-red-200'
+                : toast.includes('✅') || toast.includes('verified')
+                ? 'text-green-200'
+                : 'text-blue-200'
+            }`}>{toast}</div>
             <button 
               onClick={() => setToast(null)}
-              className="ml-3 text-green-300 hover:text-green-100 transition-colors"
+              className={`ml-3 transition-colors ${
+                toast.includes('❌') || toast.includes('failed')
+                  ? 'text-red-300 hover:text-red-100'
+                  : toast.includes('✅') || toast.includes('verified')
+                  ? 'text-green-300 hover:text-green-100'
+                  : 'text-blue-300 hover:text-blue-100'
+              }`}
             >
               ×
             </button>
