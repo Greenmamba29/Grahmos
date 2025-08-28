@@ -66,6 +66,9 @@ echo "🔍 Testing SQLite FTS Performance..."
 test_sqlite_performance() {
     echo "   Setting up test database..."
     
+    # Clean up any existing test database
+    rm -f "$TEMP_DB"
+    
     # Create test database with sample data
     sqlite3 "$TEMP_DB" << 'EOF'
 CREATE VIRTUAL TABLE fts USING fts5(title, content, docid UNINDEXED);
