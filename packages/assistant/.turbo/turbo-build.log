@@ -1,0 +1,5 @@
+
+
+> @packages/assistant@2.0.0 build /workspace/packages/assistant
+> tsc -p .
+

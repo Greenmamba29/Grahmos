@@ -52,6 +52,7 @@
     "postinstall": "husky install"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "pnpm": "^10.14.0",
     "turbo": "^2.5.5"
   },

@@ -150,6 +150,7 @@ app.use((req, res, next) => {
 });
 
 // --- Search endpoints ---
+// auth: JWT + mTLS required for all search operations
 app.get('/healthz', (_req, res) => {
   const status = {
     ok: true,

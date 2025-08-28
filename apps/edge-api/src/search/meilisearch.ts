@@ -132,9 +132,9 @@ export class MeilisearchBackend implements SearchBackend {
 
       return {
         healthy: true,
-        version: version?.pkgVersion,
-        indexSize: stats?.numberOfDocuments || 0,
-        lastUpdated: stats?.lastUpdate
+        version: (version as any)?.pkgVersion,
+        indexSize: (stats as any)?.numberOfDocuments || 0,
+        lastUpdated: (stats as any)?.lastUpdate
       };
 
     } catch (error) {
@@ -145,7 +145,7 @@ export class MeilisearchBackend implements SearchBackend {
     }
   }
 
-  private async request(endpoint: string, method: string = 'GET', body?: any): Promise<Response> {
+  private async request(endpoint: string, method: string = 'GET', body?: any): Promise<any> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
