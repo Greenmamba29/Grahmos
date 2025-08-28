@@ -4,9 +4,16 @@ import { signShortJwt, verifyJwt } from './jwt.js';
 import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
+import { requestLogger, logInfo, logError, logWarn } from './logger.js';
 const app = express();
 app.disable('x-powered-by');
-app.use(morgan('combined'));
+// Use custom logger if log injection prevention is enabled
+if (process.env.LOG_INJECTION_PREVENTION === 'true') {
+    app.use(requestLogger);
+}
+else {
+    app.use(morgan('combined'));
+}
 // Bind to Unix socket for zero TCP exposure
 const UDS = '/var/run/edge/edge.sock';
 try {
@@ -26,17 +33,17 @@ function initializeDatabase() {
     if (backend === 'sqlite') {
         const dbPath = path.join(indexDir, 'fts.sqlite');
         try {
-            console.log(`🔍 Connecting to SQLite FTS database: ${dbPath}`);
+            logInfo(`🔍 Connecting to SQLite FTS database: ${dbPath}`);
             db = new Database(dbPath, { readonly: true, fileMustExist: true });
             // Performance optimizations
             db.pragma('journal_mode=OFF');
             db.pragma('synchronous=OFF');
             db.pragma('cache_size=-1048576'); // 1GB cache
             db.pragma('mmap_size=268435456'); // 256MB mmap
-            console.log('✅ SQLite FTS database connected');
+            logInfo('✅ SQLite FTS database connected');
         }
         catch (error) {
-            console.error('❌ Failed to connect to SQLite database:', error);
+            logError('❌ Failed to connect to SQLite database:', error);
             // Create a dummy database for development
             createDummyDatabase(dbPath);
         }
@@ -46,7 +53,7 @@ function initializeDatabase() {
  * Create dummy database for development/testing
  */
 function createDummyDatabase(dbPath) {
-    console.log('📝 Creating dummy FTS database for development...');
+    logInfo('📝 Creating dummy FTS database for development...');
     // Ensure directory exists
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     const tempDb = new Database(dbPath);
@@ -74,13 +81,13 @@ function createDummyDatabase(dbPath) {
     db = new Database(dbPath, { readonly: true });
     db.pragma('journal_mode=OFF');
     db.pragma('synchronous=OFF');
-    console.log('✅ Dummy FTS database created with sample data');
+    logInfo('✅ Dummy FTS database created with sample data');
 }
 // --- mTLS PoP: issue JWT bound to client cert fingerprint ---
 app.get('/auth/mtls', (req, res) => {
     const verified = req.header('X-Client-Verify');
     const fp = req.header('X-Client-Fingerprint');
-    console.log(`🔐 mTLS auth request - Verified: ${verified}, Fingerprint: ${fp?.substring(0, 16)}...`);
+    logInfo(`🔐 mTLS auth request - Verified: ${verified}, Fingerprint: ${fp?.substring(0, 16)}...`);
     if (verified !== 'SUCCESS' || !fp) {
         return res.status(401).json({ error: 'mTLS required' });
     }
@@ -113,7 +120,7 @@ app.use((req, res, next) => {
     }
     const cnf = claims.cnf;
     if (!cnf || cnf['x5t#S256'] !== fp) {
-        console.warn(`🚨 PoP mismatch - JWT cnf: ${cnf?.['x5t#S256']?.substring(0, 16)}, Cert fp: ${fp.substring(0, 16)}`);
+        logWarn(`🚨 PoP mismatch - JWT cnf: ${cnf?.['x5t#S256']?.substring(0, 16)}, Cert fp: ${fp.substring(0, 16)}`);
         return res.status(401).json({ error: 'cnf mismatch' });
     }
     // Add user context to request
@@ -140,7 +147,7 @@ app.get('/search', (req, res) => {
     if (k < 1 || k > 100) {
         return res.status(400).json({ error: 'k must be between 1 and 100' });
     }
-    console.log(`🔍 Search query: "${q}" (k=${k}) from ${req.user?.sub}`);
+    logInfo(`🔍 Search query: "${q}" (k=${k}) from ${req.user?.sub}`);
     if (backend === 'sqlite') {
         try {
             const stmt = db.prepare(`
@@ -159,7 +166,7 @@ app.get('/search', (req, res) => {
             return res.json(response);
         }
         catch (error) {
-            console.error('SQLite search error:', error);
+            logError('SQLite search error:', error);
             return res.status(500).json({ error: 'search failed' });
         }
     }
@@ -169,7 +176,7 @@ app.get('/search', (req, res) => {
 app.get('/doc/:id', (req, res) => {
     const id = req.params.id;
     const docPath = path.join(indexDir, 'docs', `${id}.json`);
-    console.log(`📄 Document request: ${id} from ${req.user?.sub}`);
+    logInfo(`📄 Document request: ${id} from ${req.user?.sub}`);
     try {
         if (!fs.existsSync(docPath)) {
             return res.status(404).json({ error: 'document not found' });
@@ -178,7 +185,7 @@ app.get('/doc/:id', (req, res) => {
         res.type('application/json').send(content);
     }
     catch (error) {
-        console.error('Document read error:', error);
+        logError('Document read error:', error);
         res.status(500).json({ error: 'failed to read document' });
     }
 });
@@ -188,7 +195,7 @@ app.use((req, res) => {
 });
 // Error handler
 app.use((error, req, res, next) => {
-    console.error('Unhandled error:', error);
+    logError('Unhandled error:', error);
     res.status(500).json({ error: 'internal server error' });
 });
 // Initialize database
@@ -196,8 +203,8 @@ initializeDatabase();
 // Start server
 app.listen(UDS, () => {
     fs.chmodSync(UDS, 0o660);
-    console.log(`🚀 Edge API listening on ${UDS}`);
-    console.log(`🔍 Search backend: ${backend}`);
-    console.log(`📁 Index directory: ${indexDir}`);
+    logInfo(`🚀 Edge API listening on ${UDS}`);
+    logInfo(`🔍 Search backend: ${backend}`);
+    logInfo(`📁 Index directory: ${indexDir}`);
 });
 //# sourceMappingURL=server.js.map

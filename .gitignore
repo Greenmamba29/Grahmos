@@ -2,3 +2,21 @@ node_modules
 .next
 .DS_Store
 .env
+
+# Production secrets
+.env.production
+edge/.env.production
+edge/keys/
+*.key
+*.pem
+
+# Test results
+qa-results-*.log
+test-results-*.log
+build-output.log
+install.log
+
+# Build artifacts
+dist/
+build/
+*.log

@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
 import { SearchBackend, SearchResult, SearchOptions, Document, BackendStatus } from './types.js';
 
 export class MeilisearchBackend implements SearchBackend {
@@ -124,11 +124,11 @@ export class MeilisearchBackend implements SearchBackend {
 
       // Get index stats
       const statsResponse = await this.request(`/indexes/${this.indexName}/stats`);
-      const stats = statsResponse.ok ? await statsResponse.json() : null;
+      const stats = statsResponse.ok ? await statsResponse.json() as any : null;
 
       // Get version info
       const versionResponse = await this.request('/version');
-      const version = versionResponse.ok ? await versionResponse.json() : null;
+      const version = versionResponse.ok ? await versionResponse.json() as any : null;
 
       return {
         healthy: true,
