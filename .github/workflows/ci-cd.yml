@@ -463,9 +463,13 @@ jobs:
 
       - name: Archive deployment artifacts
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: deployment-artifacts-${{ github.sha }}
           path: |
-            deployment-logs/
-            monitoring-reports/
+            logs/
+            reports/
+            test-results/
+            *.log
+            *.sarif
           retention-days: 90
