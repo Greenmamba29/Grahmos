@@ -1,0 +1,200 @@
+{
+  "name": "grahmos-installer",
+  "version": "2.0.0",
+  "description": "Grahmos Desktop Installer - Frictionless OS Installation",
+  "private": true,
+  "author": "Grahmos Team",
+  "license": "MIT",
+  "main": "src/main.js",
+  "scripts": {
+    "build": "npm run build:all",
+    "build:all": "npm run build:windows && npm run build:macos && npm run build:linux",
+    "build:windows": "electron-builder --win --publish=never",
+    "build:macos": "electron-builder --mac --publish=never",
+    "build:linux": "electron-builder --linux --publish=never",
+    "build:web": "node scripts/build-web-installer.js",
+    "dev": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "postinstall": "electron-builder install-app-deps",
+    "sign:macos": "node scripts/sign-macos.js",
+    "notarize:macos": "node scripts/notarize-macos.js",
+    "create:dmg": "node scripts/create-dmg.js",
+    "create:msi": "node scripts/create-msi.js",
+    "create:deb": "node scripts/create-deb.js",
+    "create:appimage": "node scripts/create-appimage.js",
+    "test:installer": "node scripts/test-installer.js"
+  },
+  "build": {
+    "appId": "com.grahmos.desktop",
+    "productName": "Grahmos Desktop",
+    "directories": {
+      "app": "src",
+      "buildResources": "assets",
+      "output": "build"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "!**/.DS_Store",
+      "!**/node_modules",
+      "!**/.git"
+    ],
+    "extraResources": [
+      {
+        "from": "../docker-compose.yml",
+        "to": "docker-compose.yml"
+      },
+      {
+        "from": "../.env",
+        "to": ".env.template"
+      },
+      {
+        "from": "../scripts",
+        "to": "scripts"
+      },
+      {
+        "from": "../start-grahmos.sh",
+        "to": "start-grahmos.sh"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.inherit.plist",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "Install Grahmos Desktop",
+      "icon": "assets/icon.icns",
+      "background": "assets/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 400
+      },
+      "contents": [
+        {
+          "x": 144,
+          "y": 200,
+          "type": "file"
+        },
+        {
+          "x": 396,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "msi",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "publisherName": "Grahmos Team",
+      "requestedExecutionLevel": "requireAdministrator"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Grahmos Desktop",
+      "include": "platforms/windows/installer.nsh",
+      "script": "platforms/windows/installer-script.nsis"
+    },
+    "msi": {
+      "oneClick": false,
+      "perMachine": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Grahmos Desktop"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "rpm",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "snap",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Office",
+      "desktop": {
+        "Name": "Grahmos Desktop",
+        "Comment": "Enterprise Knowledge Search & AI Assistant",
+        "Keywords": "search;ai;knowledge;assistant;"
+      }
+    },
+    "deb": {
+      "depends": ["docker.io", "docker-compose", "curl"],
+      "packageCategory": "office",
+      "priority": "optional"
+    },
+    "rpm": {
+      "depends": ["docker", "docker-compose", "curl"],
+      "packageCategory": "office"
+    },
+    "snap": {
+      "summary": "Enterprise Knowledge Search & AI Assistant",
+      "description": "Grahmos Desktop provides enterprise-grade knowledge search and AI assistant capabilities with edge computing support.",
+      "grade": "stable",
+      "confinement": "strict",
+      "plugs": ["home", "network", "network-bind", "removable-media"]
+    }
+  },
+  "dependencies": {
+    "electron": "^28.2.0",
+    "electron-log": "^5.0.1",
+    "electron-updater": "^6.1.8",
+    "node-machine-id": "^1.1.12",
+    "axios": "^1.6.7",
+    "which": "^4.0.0",
+    "node-pty": "^1.0.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.9.1",
+    "electron-notarize": "^1.2.2",
+    "dotenv": "^16.4.1"
+  }
+}

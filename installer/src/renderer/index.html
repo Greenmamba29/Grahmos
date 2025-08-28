@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grahmos Desktop Installer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow: hidden;
+        }
+
+        .installer-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .step-list {
+            list-style: none;
+        }
+
+        .step {
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            color: white;
+            font-weight: 600;
+        }
+
+        .step.completed {
+            color: #4CAF50;
+        }
+
+        .step::before {
+            content: '○';
+            margin-right: 10px;
+        }
+
+        .step.active::before {
+            content: '●';
+        }
+
+        .step.completed::before {
+            content: '✓';
+        }
+
+        .main-content {
+            flex: 1;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 30px 40px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .footer {
+            padding: 20px 40px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .button-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .button-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .button-secondary {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .button-secondary:hover {
+            background: #e9e9e9;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .requirement-check {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+        }
+
+        .requirement-check.passed {
+            border-left-color: #4CAF50;
+            background: #f1f8e9;
+        }
+
+        .requirement-check.failed {
+            border-left-color: #f44336;
+            background: #fef1f1;
+        }
+
+        .requirement-check .icon {
+            font-size: 20px;
+            margin-right: 15px;
+            width: 24px;
+        }
+
+        .requirement-check.passed .icon {
+            color: #4CAF50;
+        }
+
+        .requirement-check.failed .icon {
+            color: #f44336;
+        }
+
+        .installation-path {
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .system-info {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .system-info h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .system-info table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .system-info td {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .system-info td:first-child {
+            font-weight: 600;
+            width: 30%;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .status-message.success {
+            background: #f1f8e9;
+            color: #4CAF50;
+            border: 1px solid #c8e6c9;
+        }
+
+        .status-message.error {
+            background: #fef1f1;
+            color: #f44336;
+            border: 1px solid #ffcdd2;
+        }
+
+        .status-message.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+    </style>
+</head>
+<body>
+    <div class="installer-container">
+        <div class="sidebar">
+            <div class="logo">Grahmos Desktop</div>
+            <ul class="step-list">
+                <li class="step active" data-step="welcome">Welcome</li>
+                <li class="step" data-step="requirements">System Check</li>
+                <li class="step" data-step="docker">Docker Setup</li>
+                <li class="step" data-step="location">Install Location</li>
+                <li class="step" data-step="installing">Installing</li>
+                <li class="step" data-step="complete">Complete</li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <!-- Welcome Screen -->
+            <div class="screen active" id="welcome-screen">
+                <div class="header">
+                    <h1>Welcome to Grahmos Desktop</h1>
+                    <p>Enterprise Knowledge Search & AI Assistant Platform</p>
+                </div>
+                <div class="content">
+                    <h2>What is Grahmos?</h2>
+                    <p>Grahmos is a powerful enterprise knowledge search and AI assistant platform that provides:</p>
+                    <ul style="margin: 20px 0; padding-left: 30px;">
+                        <li><strong>Advanced Search:</strong> Find information across all your documents and knowledge bases</li>
+                        <li><strong>AI Assistant:</strong> Get intelligent answers and insights from your data</li>
+                        <li><strong>Edge Computing:</strong> Process data locally for enhanced privacy and performance</li>
+                        <li><strong>Multi-Platform:</strong> Works on desktop, mobile, and web browsers</li>
+                        <li><strong>Enterprise Security:</strong> Advanced security features and compliance</li>
+                    </ul>
+
+                    <div class="system-info">
+                        <h3>System Information</h3>
+                        <table>
+                            <tr>
+                                <td>Operating System:</td>
+                                <td id="system-os">Loading...</td>
+                            </tr>
+                            <tr>
+                                <td>Architecture:</td>
+                                <td id="system-arch">Loading...</td>
+                            </tr>
+                            <tr>
+                                <td>Memory:</td>
+                                <td id="system-memory">Loading...</td>
+                            </tr>
+                            <tr>
+                                <td>CPU Cores:</td>
+                                <td id="system-cpu">Loading...</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="footer">
+                    <button class="button button-secondary" onclick="window.close()">Cancel</button>
+                    <button class="button button-primary" onclick="nextStep()">Get Started</button>
+                </div>
+            </div>
+
+            <!-- Requirements Check Screen -->
+            <div class="screen" id="requirements-screen">
+                <div class="header">
+                    <h1>System Requirements</h1>
+                    <p>Checking if your system meets the minimum requirements</p>
+                </div>
+                <div class="content">
+                    <div class="loading" id="requirements-loading">
+                        <div class="spinner"></div>
+                        <p>Checking system requirements...</p>
+                    </div>
+
+                    <div id="requirements-results" class="hidden">
+                        <div class="requirement-check" id="memory-check">
+                            <div class="icon">⚠</div>
+                            <div>
+                                <strong>Memory (RAM)</strong><br>
+                                <span id="memory-details">Minimum 8GB required</span>
+                            </div>
+                        </div>
+
+                        <div class="requirement-check" id="disk-check">
+                            <div class="icon">⚠</div>
+                            <div>
+                                <strong>Disk Space</strong><br>
+                                <span id="disk-details">Minimum 10GB free space required</span>
+                            </div>
+                        </div>
+
+                        <div class="requirement-check" id="docker-check">
+                            <div class="icon">⚠</div>
+                            <div>
+                                <strong>Docker</strong><br>
+                                <span id="docker-details">Docker Desktop is required</span>
+                            </div>
+                        </div>
+
+                        <div class="requirement-check" id="platform-check">
+                            <div class="icon">⚠</div>
+                            <div>
+                                <strong>Platform</strong><br>
+                                <span id="platform-details">Windows, macOS, or Linux required</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer">
+                    <button class="button button-secondary" onclick="prevStep()">Back</button>
+                    <button class="button button-primary" id="requirements-next" onclick="nextStep()" disabled>Next</button>
+                </div>
+            </div>
+
+            <!-- Docker Setup Screen -->
+            <div class="screen" id="docker-screen">
+                <div class="header">
+                    <h1>Docker Setup</h1>
+                    <p>Docker is required to run Grahmos Desktop</p>
+                </div>
+                <div class="content">
+                    <div id="docker-status">
+                        <div class="status-message info">
+                            <strong>Checking Docker installation...</strong>
+                        </div>
+                    </div>
+                    <div id="docker-install-section" class="hidden">
+                        <h3>Install Docker Desktop</h3>
+                        <p>Docker Desktop provides an easy way to run containerized applications on your computer.</p>
+                        <button class="button button-primary" onclick="installDocker()">Download & Install Docker</button>
+                    </div>
+                    <div id="docker-instructions" class="hidden">
+                        <div class="status-message info">
+                            <p><strong>Manual Installation Required</strong></p>
+                            <p>Please follow the instructions to install Docker, then click "Refresh" to continue.</p>
+                        </div>
+                        <button class="button button-secondary" onclick="checkDocker()">Refresh</button>
+                    </div>
+                </div>
+                <div class="footer">
+                    <button class="button button-secondary" onclick="prevStep()">Back</button>
+                    <button class="button button-primary" id="docker-next" onclick="nextStep()" disabled>Next</button>
+                </div>
+            </div>
+
+            <!-- Installation Location Screen -->
+            <div class="screen" id="location-screen">
+                <div class="header">
+                    <h1>Installation Location</h1>
+                    <p>Choose where to install Grahmos Desktop</p>
+                </div>
+                <div class="content">
+                    <p>Grahmos will be installed to the following location:</p>
+                    <div class="installation-path" id="install-path">Loading...</div>
+                    <button class="button button-secondary" onclick="chooseInstallLocation()">Change Location</button>
+                    
+                    <h3 style="margin-top: 30px;">Installation Options</h3>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox" id="create-desktop-shortcut" checked> Create desktop shortcut
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox" id="create-start-menu" checked> Create start menu shortcut
+                    </label>
+                    <label style="display: block; margin: 10px 0;">
+                        <input type="checkbox" id="auto-start" checked> Start Grahmos after installation
+                    </label>
+                </div>
+                <div class="footer">
+                    <button class="button button-secondary" onclick="prevStep()">Back</button>
+                    <button class="button button-primary" onclick="nextStep()">Install</button>
+                </div>
+            </div>
+
+            <!-- Installing Screen -->
+            <div class="screen" id="installing-screen">
+                <div class="header">
+                    <h1>Installing Grahmos</h1>
+                    <p>Please wait while Grahmos is being installed</p>
+                </div>
+                <div class="content">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="install-progress"></div>
+                    </div>
+                    <p id="install-status">Preparing installation...</p>
+                    <div style="margin-top: 30px;">
+                        <h3>What's happening:</h3>
+                        <ul style="margin-top: 15px; padding-left: 30px;">
+                            <li>Creating installation directory</li>
+                            <li>Copying application files</li>
+                            <li>Setting up Docker containers</li>
+                            <li>Configuring system integration</li>
+                            <li>Creating shortcuts</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer">
+                    <span style="color: #666;">Installation in progress...</span>
+                </div>
+            </div>
+
+            <!-- Complete Screen -->
+            <div class="screen" id="complete-screen">
+                <div class="header">
+                    <h1>Installation Complete!</h1>
+                    <p>Grahmos Desktop has been successfully installed</p>
+                </div>
+                <div class="content">
+                    <div class="status-message success">
+                        <strong>🎉 Congratulations!</strong><br>
+                        Grahmos Desktop is now ready to use.
+                    </div>
+
+                    <h3>What's Next?</h3>
+                    <ul style="margin: 20px 0; padding-left: 30px;">
+                        <li>Launch Grahmos from your desktop or start menu</li>
+                        <li>The web interface will open automatically in your browser</li>
+                        <li>Start by uploading your documents or connecting to data sources</li>
+                        <li>Explore the AI assistant features and search capabilities</li>
+                    </ul>
+
+                    <div class="system-info">
+                        <h3>Installation Details</h3>
+                        <table>
+                            <tr>
+                                <td>Installation Path:</td>
+                                <td id="final-install-path">-</td>
+                            </tr>
+                            <tr>
+                                <td>Web Interface:</td>
+                                <td><a href="http://localhost:8080" onclick="openExternal('http://localhost:8080')">http://localhost:8080</a></td>
+                            </tr>
+                            <tr>
+                                <td>Version:</td>
+                                <td>2.0.0</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="footer">
+                    <button class="button button-secondary" onclick="window.close()">Close</button>
+                    <button class="button button-primary" onclick="startGrahmos()">Launch Grahmos</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="installer.js"></script>
+</body>
+</html>

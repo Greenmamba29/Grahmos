@@ -1,3 +1,16 @@
 packages:
+  # Applications
   - 'apps/*'
+  
+  # Shared packages/libraries
   - 'packages/*'
+  
+  # Edge computing nodes
+  - 'edge/*'
+  
+  # Exclude specific directories
+  - '!**/node_modules'
+  - '!**/dist'
+  - '!**/build'
+  - '!**/.next'
+  - '!**/coverage'

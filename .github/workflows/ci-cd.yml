@@ -45,12 +45,25 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 8
+          run_install: false
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Verify pnpm installation
+        run: |
+          pnpm --version
+          which pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -107,12 +120,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 8
+          run_install: false
+
+      - name: Verify pnpm installation
+        run: |
+          pnpm --version
+          which pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -194,7 +212,7 @@ jobs:
       - name: Build Edge API image
         uses: docker/build-push-action@v5
         with:
-          context: ./packages/edge-api
+          context: ./apps/edge-api
           load: true
           tags: edge-api:test
           cache-from: type=gha
@@ -261,7 +279,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: ./packages/edge-api
+          context: ./apps/edge-api
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
