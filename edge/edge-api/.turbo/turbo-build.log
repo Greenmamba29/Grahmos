@@ -1,0 +1,4 @@
+
+> edge-api@1.0.0 build /workspace/edge/edge-api
+> tsc -p .
+

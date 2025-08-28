@@ -1,0 +1,50 @@
+
+> pwa-shell@0.1.0 build /workspace/apps/pwa-shell
+> next build && workbox generateSW workbox.config.cjs
+
+ ⚠ The "experimental.esmExternals" option has been modified. experimental.esmExternals is not recommended to be modified as it may disrupt module resolution. It should be removed from your next.config.js.
+   ▲ Next.js 15.4.6
+   - Experiments (use with caution):
+     · esmExternals: "loose"
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 12.0s
+   Linting and checking validity of types ...
+
+./src/app/api/kiwix/route.ts
+7:36  Warning: 'endpoint' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/purchase/PurchaseModal.tsx
+19:11  Warning: 'intentId' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/6) ...
+   Generating static pages (1/6) 
+   Generating static pages (2/6) 
+   Generating static pages (4/6) 
+ ✓ Generating static pages (6/6)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    32.8 kB         133 kB
+├ ○ /_not-found                            996 B         101 kB
+└ ƒ /api/kiwix                             123 B         100 kB
++ First Load JS shared by all             100 kB
+  ├ chunks/3a669f3f-e78c698cb6889685.js  54.1 kB
+  ├ chunks/588-e6f0ed04935521ab.js       43.8 kB
+  └ other shared chunks (total)          2.06 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Using configuration from /workspace/apps/pwa-shell/workbox.config.cjs.
+server/chunks/143.js is 2.93 MB, and won't be precached. Configure maximumFileSizeToCacheInBytes to change this limit.
+The service worker files were written to:
+  • /workspace/apps/pwa-shell/public/sw.js
+  • /workspace/apps/pwa-shell/public/sw.js.map
+  • /workspace/apps/pwa-shell/public/workbox-952ed811.js
+  • /workspace/apps/pwa-shell/public/workbox-952ed811.js.map
+The service worker will precache 56 URLs, totaling 3.23 MB.

@@ -1,5 +1,13 @@
-import fetch from 'node-fetch';
 import { SearchBackend, SearchResult, SearchOptions, Document, BackendStatus } from './types.js';
+
+interface MeiliStats {
+  numberOfDocuments?: number;
+  lastUpdate?: string;
+}
+
+interface MeiliVersionInfo {
+  pkgVersion?: string;
+}
 
 export class MeilisearchBackend implements SearchBackend {
   public readonly name = 'meilisearch';
@@ -124,16 +132,20 @@ export class MeilisearchBackend implements SearchBackend {
 
       // Get index stats
       const statsResponse = await this.request(`/indexes/${this.indexName}/stats`);
-      const stats = statsResponse.ok ? await statsResponse.json() : null;
+      const stats: MeiliStats | null = statsResponse.ok
+        ? (await statsResponse.json()) as MeiliStats
+        : null;
 
       // Get version info
       const versionResponse = await this.request('/version');
-      const version = versionResponse.ok ? await versionResponse.json() : null;
+      const version: MeiliVersionInfo | null = versionResponse.ok
+        ? (await versionResponse.json()) as MeiliVersionInfo
+        : null;
 
       return {
         healthy: true,
         version: version?.pkgVersion,
-        indexSize: stats?.numberOfDocuments || 0,
+        indexSize: stats?.numberOfDocuments ?? 0,
         lastUpdated: stats?.lastUpdate
       };
 
