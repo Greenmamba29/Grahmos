@@ -16,7 +16,7 @@ export default function PurchaseModal({ item, onClose }:{ item:{ id:string; name
 
   async function onBuy(){
     setBusy(true); setMsg('Queuing order…')
-    const intentId = await enqueuePurchase({ itemId:item.id, amount: item.price, currency:'usd' })
+    await enqueuePurchase({ itemId:item.id, amount: item.price, currency:'usd' })
     setMsg('Queued. ' + (online? 'Processing…':'You are offline; will process later.'))
     if (online && pubkey) { await flushPurchases(pubkey); setMsg('Done (if verified). Check Orders.') }
     setBusy(false)
