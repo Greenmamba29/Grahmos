@@ -48,11 +48,10 @@
     "security:audit": "pnpm audit --audit-level high",
     "security:scan": "./scripts/security-audit.sh",
     "health:check": "./scripts/health-check.sh",
-    "backup:create": "./scripts/disaster-recovery.sh backup",
-    "postinstall": "husky install"
+    "backup:create": "./scripts/disaster-recovery.sh backup"
   },
   "devDependencies": {
-    "pnpm": "^10.14.0",
+    "pnpm": "^8.15.4",
     "turbo": "^2.5.5"
   },
   "dependencies": {
