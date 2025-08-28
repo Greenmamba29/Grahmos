@@ -1,0 +1,43 @@
+# Node modules - will be installed fresh
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+*.log
+
+# Development files
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+coverage/
+.nyc_output/
+*.test.ts
+*.spec.ts
+
+# Git files
+.git/
+.gitignore
+
+# Documentation
+README.md
+docs/
+
+# Other
+.dockerignore
+Dockerfile
+docker-compose*.yml

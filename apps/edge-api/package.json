@@ -9,8 +9,12 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
-    "typecheck": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
     "test": "vitest",
+    "test:unit": "vitest run",
+    "test:integration": "echo 'Integration tests not configured yet'",
+    "test:e2e": "echo 'E2E tests not configured yet'",
+    "test:coverage": "vitest run --coverage",
     "clean": "rm -rf dist"
   },
   "dependencies": {
