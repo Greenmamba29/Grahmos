@@ -1,0 +1,5 @@
+
+
+> @apps/edge-api@2.0.0 build /workspace/apps/edge-api
+> tsc -p .
+

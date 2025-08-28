@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
 import { SearchBackend, SearchResult, SearchOptions, Document, BackendStatus } from './types.js';
 
 export class MeilisearchBackend implements SearchBackend {
@@ -132,9 +132,9 @@ export class MeilisearchBackend implements SearchBackend {
 
       return {
         healthy: true,
-        version: version?.pkgVersion,
-        indexSize: stats?.numberOfDocuments || 0,
-        lastUpdated: stats?.lastUpdate
+        version: (version as any)?.pkgVersion || 'unknown',
+        indexSize: (stats as any)?.numberOfDocuments || 0,
+        lastUpdated: (stats as any)?.lastUpdate || null
       };
 
     } catch (error) {
@@ -159,7 +159,7 @@ export class MeilisearchBackend implements SearchBackend {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined
-    });
+    }) as Promise<Response>;
   }
 
   private extractSnippet(hit: any): string {

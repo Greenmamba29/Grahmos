@@ -1,0 +1,1 @@
+{"version":3,"file":"global.setup.js","sourceRoot":"","sources":["../../src/test/global.setup.ts"],"names":[],"mappings":"AAAA,oBAAoB;AACpB,MAAM,CAAC,KAAK,UAAU,KAAK;IACzB,gCAAgC;IAChC,OAAO,CAAC,GAAG,CAAC,gCAAgC,CAAC,CAAC;AAChD,CAAC;AAED,MAAM,CAAC,KAAK,UAAU,QAAQ;IAC5B,kCAAkC;IAClC,OAAO,CAAC,GAAG,CAAC,kCAAkC,CAAC,CAAC;AAClD,CAAC"}

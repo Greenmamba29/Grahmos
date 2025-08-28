@@ -2,7 +2,7 @@
 # Features: Security hardening, minimal attack surface, rootless execution
 
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Add build dependencies for native modules
 RUN apk add --no-cache \
@@ -11,18 +11,21 @@ RUN apk add --no-cache \
     g++ \
     sqlite-dev
 
+# Install pnpm
+RUN npm install -g pnpm@10.14.0
+
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+COPY package*.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile --prod=false
 
 # Copy source code and build
 COPY . .
-RUN npm run build
+RUN pnpm run build
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 # Security: Create non-root user
 RUN addgroup -g 1000 -S nodegroup && \
@@ -34,8 +37,8 @@ RUN apk add --no-cache \
     sqlite \
     && rm -rf /var/cache/apk/*
 
-# Security: Remove npm and yarn to reduce attack surface
-RUN npm uninstall -g npm yarn || true
+# Security: Remove npm and yarn to reduce attack surface  
+RUN npm uninstall -g npm yarn pnpm || true
 
 WORKDIR /app
 

@@ -49,9 +49,10 @@
     "security:scan": "./scripts/security-audit.sh",
     "health:check": "./scripts/health-check.sh",
     "backup:create": "./scripts/disaster-recovery.sh backup",
-    "postinstall": "husky install"
+    "postinstall": "husky install || true"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "pnpm": "^10.14.0",
     "turbo": "^2.5.5"
   },
