@@ -25,8 +25,8 @@ RUN npm run build
 FROM node:18-alpine AS production
 
 # Security: Create non-root user
-RUN addgroup -g 1000 -S nodegroup && \
-    adduser -u 1000 -S nodeuser -G nodegroup
+RUN addgroup -g 1000 nodegroup && \
+    adduser -u 1000 -D -s /bin/sh nodeuser -G nodegroup
 
 # Security: Install minimal runtime dependencies
 RUN apk add --no-cache \
