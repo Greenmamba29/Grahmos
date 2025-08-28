@@ -1,0 +1,49 @@
+# Grafana Dashboard Provisioning Configuration
+# Phase 3: Improve/Deploy - Monitoring Dashboard
+
+apiVersion: 1
+
+providers:
+  # Grahmos Application Dashboards
+  - name: 'grahmos-dashboards'
+    orgId: 1
+    folder: 'Grahmos V1+V2 Unified'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/grahmos
+
+  # Infrastructure Dashboards
+  - name: 'infrastructure-dashboards'
+    orgId: 1
+    folder: 'Infrastructure'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/infrastructure
+
+  # Security Dashboards
+  - name: 'security-dashboards'
+    orgId: 1
+    folder: 'Security'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/security
+
+  # Business Metrics Dashboards
+  - name: 'business-dashboards'
+    orgId: 1
+    folder: 'Business Metrics'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/business

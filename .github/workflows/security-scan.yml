@@ -1,0 +1,283 @@
+name: Security Scanning & Monitoring
+
+on:
+  schedule:
+    # Run daily security scans at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of security scan to perform'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+        - full
+        - dependencies
+        - containers
+        - infrastructure
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Dependency Security Scan
+  dependency-scan:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+    if: inputs.scan_type == 'dependencies' || inputs.scan_type == 'full' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit npm dependencies
+        run: pnpm audit --audit-level high --json > npm-audit.json || true
+
+      - name: Snyk dependency scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=package.json
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-scan-results
+          path: |
+            npm-audit.json
+            snyk-results.json
+
+  # Container Security Scan
+  container-scan:
+    name: Container Security Audit
+    runs-on: ubuntu-latest
+    if: inputs.scan_type == 'containers' || inputs.scan_type == 'full' || github.event_name == 'schedule'
+    
+    strategy:
+      matrix:
+        service: [edge-api, nginx-proxy, meilisearch, redis]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build container image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service == 'edge-api' && './packages/edge-api' || './infra/docker' }}
+          load: true
+          tags: ${{ matrix.service }}:security-scan
+          file: ${{ matrix.service == 'edge-api' && './packages/edge-api/Dockerfile' || format('./infra/docker/{0}/Dockerfile', matrix.service) }}
+
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ matrix.service }}:security-scan'
+          format: 'sarif'
+          output: '${{ matrix.service }}-trivy.sarif'
+
+      - name: Grype vulnerability scan
+        uses: anchore/scan-action@v3
+        with:
+          image: '${{ matrix.service }}:security-scan'
+          fail-build: true
+          severity-cutoff: high
+
+      - name: Upload scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: '${{ matrix.service }}-trivy.sarif'
+          category: '${{ matrix.service }}-security'
+
+  # Infrastructure Security Scan
+  infrastructure-scan:
+    name: Infrastructure Security Audit
+    runs-on: ubuntu-latest
+    if: inputs.scan_type == 'infrastructure' || inputs.scan_type == 'full' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Terraform security scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          additional_args: --format sarif --out terraform-security.sarif
+
+      - name: Checkov infrastructure scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ./infra
+          framework: dockerfile,docker_compose,kubernetes,terraform
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+
+      - name: Dockerfile best practices
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ./packages/edge-api/Dockerfile
+          format: sarif
+          output-file: hadolint-results.sarif
+
+      - name: Upload infrastructure scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: |
+            terraform-security.sarif
+            checkov-results.sarif
+            hadolint-results.sarif
+
+  # Secret Scanning
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    if: inputs.scan_type == 'full' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: GitLeaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config-path: .gitleaks.toml
+
+  # DAST Security Testing
+  dast-scan:
+    name: Dynamic Application Security Testing
+    runs-on: ubuntu-latest
+    if: inputs.scan_type == 'full' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup test environment
+        run: |
+          cp .env.example .env
+          make up
+          sleep 60
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: 'https://localhost:8443'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+      - name: OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.8.0
+        with:
+          target: 'https://localhost:8443'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a -j'
+
+      - name: Nuclei vulnerability scan
+        uses: projectdiscovery/nuclei-action@main
+        with:
+          target: 'localhost:8443'
+          templates: 'cves,vulnerabilities,misconfiguration'
+
+  # Security Compliance Check
+  compliance-check:
+    name: Security Compliance Verification
+    runs-on: ubuntu-latest
+    if: inputs.scan_type == 'full' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: CIS Benchmark check
+        run: |
+          # Run CIS Docker benchmark
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /usr/lib/systemd:/usr/lib/systemd:ro \
+            -v /etc:/etc:ro \
+            docker/docker-bench-security
+
+      - name: Security policy validation
+        run: |
+          # Validate security policies are in place
+          ./scripts/validate-security-policies.sh
+
+      - name: Generate compliance report
+        run: |
+          ./scripts/generate-compliance-report.sh
+
+  # Notification and Reporting
+  security-report:
+    name: Security Report Generation
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, container-scan, infrastructure-scan, secret-scan, dast-scan, compliance-check]
+    if: always()
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate security summary
+        run: |
+          # Generate comprehensive security report
+          ./scripts/generate-security-report.sh
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report-${{ github.run_id }}
+          path: security-report/
+          retention-days: 90
+
+      - name: Notify security team
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#security-alerts'
+          webhook_url: ${{ secrets.SECURITY_SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          text: '🚨 Security scan detected critical vulnerabilities!'
+
+      - name: Create security issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Security Vulnerabilities Detected - ' + new Date().toISOString(),
+              body: 'Critical security vulnerabilities have been detected in the latest security scan. Please review the security report artifacts.',
+              labels: ['security', 'critical', 'vulnerability']
+            })

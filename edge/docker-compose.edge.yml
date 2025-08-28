@@ -1,0 +1,91 @@
+version: "3.8"
+
+x-secure-common: &secure_common
+  read_only: true
+  cap_drop: ["ALL"]
+  security_opt:
+    - no-new-privileges:true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev
+    - /run:rw,noexec,nosuid,nodev
+  restart: unless-stopped
+  networks: [edge]
+
+networks:
+  edge: {}
+
+volumes:
+  sockets:
+  data_content:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/content
+  data_manifests:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/manifests
+  data_indexes:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/indexes
+  tls:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /etc/edge/tls  # host path with certs/keys (0600 perms)
+
+services:
+  edge-api:
+    image: node:20-alpine
+    user: "10001:10001"            # non-root UID/GID existing in image
+    working_dir: /app
+    command: ["node", "dist/server.js"]
+    volumes:
+      - sockets:/var/run/edge
+      - ./edge-api:/app:ro
+      - data_content:/app/content:ro
+      - data_manifests:/app/manifests:ro
+      - data_indexes:/app/indexes:ro
+    environment:
+      NODE_ENV: production
+      JWT_ISSUER: "edge.grahmos.local"
+      JWT_AUDIENCE: "grahmos-clients"
+      JWT_TTL_SECONDS: "300"
+      JWT_HS512_KEY: "${JWT_HS512_KEY:-default-dev-key-change-in-production}"
+      # Choose search backend
+      SEARCH_BACKEND: "sqlite"   # or "meili"
+      MEILI_HOST: "http://127.0.0.1:7700"
+      INDEX_DIR: "/app/indexes/current"  # symlink to active index
+    <<: *secure_common
+
+  nginx:
+    image: nginx:1.25-alpine
+    user: "101:101"
+    depends_on: [edge-api]
+    ports:
+      - "443:443"
+    volumes:
+      - sockets:/var/run/edge
+      - ./ops/nginx.conf:/etc/nginx/nginx.conf:ro
+      - tls:/etc/nginx/tls:ro
+    <<: *secure_common
+
+  # Optional: keep behind API only. No published ports.
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    environment:
+      MEILI_ENV: production
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - ./data/meili:/meili_data
+    expose: ["7700"]
+    mem_limit: 2g
+    pids_limit: 256
+    <<: *secure_common

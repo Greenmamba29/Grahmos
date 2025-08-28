@@ -1,0 +1,11 @@
+
+✅ [0;32mPASS[0m - Single Term Search (100 queries): 10.0 ms (target: <50 ms)
+✅ [0;32mPASS[0m - Complex Query Search (50 queries): 0 ms (target: <100 ms)
+❌ [0;31mFAIL[0m - Concurrent Search (200 parallel queries): 2000.0 ms (target: <2000 ms)
+📊 [0;34mINFO[0m - Database Size (1000 docs): .44 MB
+✅ [0;32mPASS[0m - Memory-Mapped Random Access (100 ops): 10.0 ms (target: <20 ms)
+✅ [0;32mPASS[0m - Sequential Read (10MB): 0 ms (target: <50 ms)
+✅ [0;32mPASS[0m - Unix Domain Socket (100 messages): 20.0 ms (target: <30 ms)
+📊 [0;34mINFO[0m - Socket Throughput (50KB): .04 MB/s
+✅ [0;32mPASS[0m - RSA-SHA256 Signing (50 ops): 20.0 ms (target: <100 ms)
+✅ [0;32mPASS[0m - RSA-SHA256 Verification (100 ops): 10.0 ms (target: <50 ms)

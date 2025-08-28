@@ -1,0 +1,117 @@
+# Grafana Datasources Configuration
+# Phase 3: Improve/Deploy - Monitoring Dashboard
+
+apiVersion: 1
+
+datasources:
+  # Prometheus - Main metrics source
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus-uid
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    version: 1
+    editable: true
+    jsonData:
+      timeInterval: 30s
+      queryTimeout: 60s
+      httpMethod: POST
+      manageAlerts: true
+      alertmanagerUid: alertmanager-uid
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: jaeger-uid
+
+  # Loki - Log aggregation
+  - name: Loki
+    type: loki
+    uid: loki-uid
+    access: proxy
+    url: http://loki:3100
+    version: 1
+    editable: true
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - datasourceUid: jaeger-uid
+          matcherRegex: "trace_id=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
+
+  # Jaeger - Distributed tracing
+  - name: Jaeger
+    type: jaeger
+    uid: jaeger-uid
+    access: proxy
+    url: http://jaeger:16686
+    version: 1
+    editable: true
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki-uid
+        tags: [{ key: 'service.name', value: 'service' }]
+        filterByTraceID: true
+        filterBySpanID: false
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+      tracesToMetrics:
+        datasourceUid: prometheus-uid
+        tags: [{ key: 'service.name', value: 'service' }]
+        queries:
+          - name: 'Sample query'
+            query: 'sum(rate(traces_spanmetrics_latency_bucket{service_name="$service"}[5m]))'
+      nodeGraph:
+        enabled: true
+
+  # AlertManager - Alert management
+  - name: AlertManager
+    type: alertmanager
+    uid: alertmanager-uid
+    access: proxy
+    url: http://alertmanager:9093
+    version: 1
+    editable: true
+    implementation: prometheus
+    jsonData:
+      handleGrafanaManagedAlerts: true
+
+  # InfluxDB - Time series (if needed for additional metrics)
+  # - name: InfluxDB
+  #   type: influxdb
+  #   uid: influxdb-uid
+  #   access: proxy
+  #   url: http://influxdb:8086
+  #   database: grahmos
+  #   user: admin
+  #   secureJsonData:
+  #     password: admin123
+  #   version: 1
+  #   editable: true
+
+  # PostgreSQL - Application database metrics (if using PostgreSQL)
+  # - name: PostgreSQL
+  #   type: postgres
+  #   uid: postgres-uid
+  #   access: proxy
+  #   url: postgres:5432
+  #   database: grahmos
+  #   user: postgres
+  #   secureJsonData:
+  #     password: postgres123
+  #   version: 1
+  #   editable: true
+  #   jsonData:
+  #     sslmode: disable
+  #     maxOpenConns: 100
+  #     maxIdleConns: 100
+  #     connMaxLifetime: 14400
+
+  # TestData - For testing dashboards
+  - name: TestData DB
+    type: testdata
+    uid: testdata-uid
+    access: direct
+    version: 1
+    editable: true
+    orgId: 1

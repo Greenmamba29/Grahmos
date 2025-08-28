@@ -1,0 +1,205 @@
+# Grahmos V1+V2 Unified - Prometheus Configuration
+# Phase 3: Improve/Deploy - Monitoring & Observability
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  scrape_timeout: 10s
+  external_labels:
+    cluster: 'grahmos-unified'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Rules configuration
+rule_files:
+  - "rules/*.yml"
+  - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+
+  # Grahmos Edge API - V1+V2 Unified
+  - job_name: 'grahmos-edge-api'
+    static_configs:
+      - targets: ['edge-api:9090']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    honor_labels: true
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'edge-api'
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'grahmos-edge-api'
+
+  # NGINX Metrics
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-proxy:8080']
+    scrape_interval: 30s
+    metrics_path: '/nginx_status'
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'nginx-proxy'
+
+  # Meilisearch Metrics
+  - job_name: 'meilisearch'
+    static_configs:
+      - targets: ['meilisearch:7700']
+    scrape_interval: 30s
+    metrics_path: '/stats'
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'meilisearch'
+
+  # Redis Exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'redis-cache'
+
+  # Node Exporter (system metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'system'
+
+  # cAdvisor (container metrics)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'containers'
+
+  # Docker daemon metrics
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['host.docker.internal:9323']
+    scrape_interval: 60s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'docker-daemon'
+
+  # Application-specific metrics
+  - job_name: 'grahmos-auth-metrics'
+    static_configs:
+      - targets: ['edge-api:9090']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    params:
+      module: ['auth']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'grahmos-auth'
+
+  - job_name: 'grahmos-search-metrics'
+    static_configs:
+      - targets: ['edge-api:9090']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    params:
+      module: ['search']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'grahmos-search'
+
+  - job_name: 'grahmos-assistant-metrics'
+    static_configs:
+      - targets: ['edge-api:9090']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    params:
+      module: ['assistant']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'grahmos-assistant'
+
+  # Custom business metrics
+  - job_name: 'grahmos-business-metrics'
+    static_configs:
+      - targets: ['edge-api:9090']
+    scrape_interval: 60s
+    metrics_path: '/metrics/business'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'grahmos-business'
+
+  # Health check metrics
+  - job_name: 'grahmos-health'
+    static_configs:
+      - targets: ['edge-api:3000']
+    scrape_interval: 15s
+    metrics_path: '/health'
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'grahmos-health'
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 30d
+    retention.size: 10GB
+    min-block-duration: 2h
+    max-block-duration: 25h
+    wal-compression: true
+
+# Remote write configuration (for long-term storage)
+# remote_write:
+#   - url: "https://prometheus-remote-write.example.com/api/v1/write"
+#     basic_auth:
+#       username: 'prometheus'
+#       password: 'your-password'
+#     write_relabel_configs:
+#       - source_labels: [__name__]
+#         regex: 'grahmos_.*'
+#         action: keep
+
+# Remote read configuration
+# remote_read:
+#   - url: "https://prometheus-remote-read.example.com/api/v1/read"
+#     basic_auth:
+#       username: 'prometheus'
+#       password: 'your-password'

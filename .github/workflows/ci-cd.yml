@@ -1,0 +1,453 @@
+name: Grahmos V1+V2 Unified - CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      skip_tests:
+        description: 'Skip tests (emergency deployment)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Code Quality & Security Analysis
+  code-analysis:
+    name: Code Analysis & Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint code
+        run: pnpm lint
+
+      - name: TypeScript type check
+        run: pnpm type-check
+
+      - name: Run security audit
+        run: pnpm audit --audit-level high
+
+      - name: SAST Analysis with CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: SAST with Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/dockerfile
+            p/docker-compose
+            p/nginx
+
+      - name: Dependency vulnerability scan
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./
+          format: spdx-json
+
+  # Unit & Integration Tests
+  test-suite:
+    name: Comprehensive Test Suite
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.skip_tests }}
+    needs: [ code-analysis ]
+    
+    strategy:
+      matrix:
+        test-type: [ unit, integration, e2e ]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup test environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc
+          docker --version
+          docker-compose --version
+
+      - name: Start test infrastructure
+        run: |
+          cp .env.example .env
+          make up
+          sleep 30
+
+      - name: Run unit tests
+        if: matrix.test-type == 'unit'
+        run: |
+          pnpm test:unit
+          pnpm test:coverage
+
+      - name: Run integration tests
+        if: matrix.test-type == 'integration'
+        run: pnpm test:integration
+
+      - name: Run E2E tests
+        if: matrix.test-type == 'e2e'
+        run: |
+          # Wait for services to be fully ready
+          timeout 120s bash -c 'until curl -k -s https://localhost:8443/health; do sleep 5; done'
+          pnpm test:e2e
+
+      - name: Run security tests
+        if: matrix.test-type == 'integration'
+        run: ./scripts/test-security.sh
+
+      - name: Run performance tests
+        if: matrix.test-type == 'e2e'
+        run: ./scripts/test-performance.sh
+
+      - name: Run functional tests
+        if: matrix.test-type == 'integration'
+        run: ./scripts/test-functional.sh
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.test-type }}
+          path: |
+            test-results/
+            coverage/
+          retention-days: 30
+
+      - name: Upload coverage to Codecov
+        if: matrix.test-type == 'unit'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  # Container Security Scan
+  container-security:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    needs: [ test-suite ]
+    if: always() && (needs.test-suite.result == 'success' || needs.test-suite.result == 'skipped')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Edge API image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/edge-api
+          load: true
+          tags: edge-api:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan Edge API image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'edge-api:test'
+          format: 'sarif'
+          output: 'edge-api-scan.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'edge-api-scan.sarif'
+
+      - name: Scan with Snyk Container
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: edge-api:test
+          args: --severity-threshold=high
+
+  # Build and Push Container Images
+  build-images:
+    name: Build & Push Container Images
+    runs-on: ubuntu-latest
+    needs: [ test-suite, container-security ]
+    if: always() && (needs.test-suite.result == 'success' || needs.test-suite.result == 'skipped') && needs.container-security.result == 'success'
+    outputs:
+      edge-api-image: ${{ steps.meta.outputs.tags }}
+      edge-api-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}/edge-api
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-,suffix=-{{date 'YYYYMMDD-HHmm'}},format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Edge API image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./packages/edge-api
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: production
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}/edge-api:${{ github.sha }}
+          format: spdx-json
+          output-file: edge-api-sbom.spdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: edge-api-sbom
+          path: edge-api-sbom.spdx.json
+
+  # Staging Deployment
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [ build-images ]
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'staging')
+    environment: 
+      name: staging
+      url: https://staging.grahmos.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup deployment tools
+        run: |
+          # Install deployment dependencies
+          sudo apt-get update
+          sudo apt-get install -y curl jq
+          
+      - name: Deploy to staging
+        env:
+          DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Deploy using secure deployment script
+          ./scripts/deploy.sh staging $IMAGE_TAG
+
+      - name: Run smoke tests
+        run: |
+          sleep 60  # Wait for deployment to stabilize
+          ./scripts/smoke-tests.sh https://staging.grahmos.com
+
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+
+  # Production Deployment
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [ build-images, deploy-staging ]
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+    environment: 
+      name: production
+      url: https://grahmos.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Manual approval checkpoint
+        uses: trstringer/manual-approval@v1
+        if: github.event_name != 'release'
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ secrets.PRODUCTION_APPROVERS }}
+          minimum-approvals: 2
+          issue-title: "Production Deployment Approval Required"
+
+      - name: Deploy to production
+        env:
+          DEPLOY_KEY: ${{ secrets.PRODUCTION_DEPLOY_KEY }}
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ./scripts/deploy.sh production $IMAGE_TAG
+
+      - name: Run comprehensive smoke tests
+        run: |
+          sleep 120  # Wait for deployment to stabilize
+          ./scripts/smoke-tests.sh https://grahmos.com
+          ./scripts/test-status.sh
+
+      - name: Update deployment status
+        uses: chrnorm/deployment-status@v2
+        with:
+          token: "${{ github.token }}"
+          state: "success"
+          deployment-id: ${{ steps.deployment.outputs.deployment-id }}
+
+      - name: Notify production deployment
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#production'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          text: "🚀 Production deployment successful!"
+
+  # Performance Monitoring
+  performance-monitoring:
+    name: Performance Baseline
+    runs-on: ubuntu-latest
+    needs: [ deploy-staging ]
+    if: needs.deploy-staging.result == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run performance baseline
+        run: |
+          # Run performance tests against staging
+          ./scripts/performance-baseline.sh https://staging.grahmos.com
+
+      - name: Store performance metrics
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: performance-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+
+  # Security Monitoring
+  security-monitoring:
+    name: Security Monitoring
+    runs-on: ubuntu-latest
+    needs: [ deploy-production ]
+    if: needs.deploy-production.result == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security monitoring
+        env:
+          PRODUCTION_URL: https://grahmos.com
+        run: |
+          # Verify security posture in production
+          ./scripts/security-monitoring.sh $PRODUCTION_URL
+
+      - name: OWASP ZAP security scan
+        uses: zaproxy/action-full-scan@v0.8.0
+        with:
+          target: 'https://grahmos.com'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+  # Cleanup
+  cleanup:
+    name: Cleanup Resources
+    runs-on: ubuntu-latest
+    needs: [ deploy-production, performance-monitoring, security-monitoring ]
+    if: always()
+    
+    steps:
+      - name: Cleanup old container images
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Cleanup old images (keep last 10 versions)
+          echo "Cleaning up old container images..."
+          # Implementation would use GitHub Packages API or registry cleanup
+
+      - name: Archive deployment artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-artifacts-${{ github.sha }}
+          path: |
+            deployment-logs/
+            monitoring-reports/
+          retention-days: 90
