@@ -8,7 +8,8 @@
     ".": "./src/db.ts"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test src/db.test.js",
+    "build": "echo \"No build required for TypeScript module\""
   },
   "keywords": [],
   "author": "",

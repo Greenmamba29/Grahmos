@@ -1,5 +1,14 @@
-import fetch from 'node-fetch';
 import { SearchBackend, SearchResult, SearchOptions, Document, BackendStatus } from './types.js';
+
+// Define Meilisearch-specific interfaces
+interface MeilisearchVersion {
+  pkgVersion?: string;
+}
+
+interface MeilisearchStats {
+  numberOfDocuments?: number;
+  lastUpdate?: string;
+}
 
 export class MeilisearchBackend implements SearchBackend {
   public readonly name = 'meilisearch';
@@ -124,17 +133,17 @@ export class MeilisearchBackend implements SearchBackend {
 
       // Get index stats
       const statsResponse = await this.request(`/indexes/${this.indexName}/stats`);
-      const stats = statsResponse.ok ? await statsResponse.json() : null;
+      const stats: MeilisearchStats | null = statsResponse.ok ? await statsResponse.json() as MeilisearchStats : null;
 
       // Get version info
       const versionResponse = await this.request('/version');
-      const version = versionResponse.ok ? await versionResponse.json() : null;
+      const version: MeilisearchVersion | null = versionResponse.ok ? await versionResponse.json() as MeilisearchVersion : null;
 
       return {
         healthy: true,
-        version: version?.pkgVersion,
+        version: version?.pkgVersion || 'unknown',
         indexSize: stats?.numberOfDocuments || 0,
-        lastUpdated: stats?.lastUpdate
+        lastUpdated: stats?.lastUpdate || 'unknown'
       };
 
     } catch (error) {
@@ -159,7 +168,7 @@ export class MeilisearchBackend implements SearchBackend {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined
-    });
+    }) as Promise<Response>;
   }
 
   private extractSnippet(hit: any): string {
