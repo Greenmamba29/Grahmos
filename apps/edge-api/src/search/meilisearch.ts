@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+// Use built-in fetch (Node.js 18+)
 import { SearchBackend, SearchResult, SearchOptions, Document, BackendStatus } from './types.js';
 
 export class MeilisearchBackend implements SearchBackend {
@@ -132,9 +132,9 @@ export class MeilisearchBackend implements SearchBackend {
 
       return {
         healthy: true,
-        version: version?.pkgVersion,
-        indexSize: stats?.numberOfDocuments || 0,
-        lastUpdated: stats?.lastUpdate
+        version: (version as any)?.pkgVersion,
+        indexSize: (stats as any)?.numberOfDocuments || 0,
+        lastUpdated: (stats as any)?.lastUpdate
       };
 
     } catch (error) {

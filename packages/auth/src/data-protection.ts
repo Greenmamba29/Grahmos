@@ -181,7 +181,7 @@ export class KeyManagementService {
     const contextBuffer = Buffer.from(context, 'utf8');
     const derivationSalt = Buffer.concat([salt, contextBuffer]);
     
-    return await scrypt(masterKey, derivationSalt, keyLength);
+    return await scrypt(masterKey, derivationSalt, keyLength) as Buffer;
   }
 
   getKeyVersion(keyName: string = 'primary'): string {
@@ -341,7 +341,7 @@ export class AdvancedEncryptionService {
   }
 
   private encryptAESGCM(data: string, key: Buffer, iv: Buffer): { encryptedBuffer: Buffer; authTag: Buffer } {
-    const cipher = crypto.createCipher('aes-256-gcm', key, { iv });
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
     
     let encrypted = cipher.update(data, 'utf8');
     const final = cipher.final();
@@ -352,7 +352,7 @@ export class AdvancedEncryptionService {
   }
 
   private decryptAESGCM(encryptedBuffer: Buffer, key: Buffer, iv: Buffer, authTag: Buffer): string {
-    const decipher = crypto.createDecipher('aes-256-gcm', key, { iv });
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(authTag);
     
     let decrypted = decipher.update(encryptedBuffer);
@@ -364,7 +364,7 @@ export class AdvancedEncryptionService {
   private encryptChaCha20Poly1305(data: string, key: Buffer, iv: Buffer): { encryptedBuffer: Buffer; authTag: Buffer } {
     // Note: Node.js doesn't have built-in ChaCha20-Poly1305, this is a placeholder
     // In production, use a library like 'node-sodium' or 'tweetnacl'
-    const cipher = crypto.createCipher('chacha20-poly1305', key, { iv });
+    const cipher = crypto.createCipheriv('chacha20-poly1305', key, iv);
     
     let encrypted = cipher.update(data, 'utf8');
     const final = cipher.final();
@@ -376,7 +376,7 @@ export class AdvancedEncryptionService {
 
   private decryptChaCha20Poly1305(encryptedBuffer: Buffer, key: Buffer, iv: Buffer, authTag: Buffer): string {
     // Note: Node.js doesn't have built-in ChaCha20-Poly1305, this is a placeholder
-    const decipher = crypto.createDecipher('chacha20-poly1305', key, { iv });
+    const decipher = crypto.createDecipheriv('chacha20-poly1305', key, iv);
     decipher.setAuthTag(authTag);
     
     let decrypted = decipher.update(encryptedBuffer);
@@ -386,7 +386,7 @@ export class AdvancedEncryptionService {
   }
 
   private encryptAESCBC(data: string, key: Buffer, iv: Buffer): Buffer {
-    const cipher = crypto.createCipher('aes-256-cbc', key, { iv });
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
     
     let encrypted = cipher.update(data, 'utf8');
     const final = cipher.final();
@@ -395,7 +395,7 @@ export class AdvancedEncryptionService {
   }
 
   private decryptAESCBC(encryptedBuffer: Buffer, key: Buffer, iv: Buffer): string {
-    const decipher = crypto.createDecipher('aes-256-cbc', key, { iv });
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
     
     let decrypted = decipher.update(encryptedBuffer);
     const final = decipher.final();
@@ -440,7 +440,7 @@ export class PIIProtectionService {
       return data;
     }
 
-    const protected = { ...data };
+    const protectedData = { ...data };
     
     // Define PII fields that need protection
     const piiFields = [
@@ -449,22 +449,22 @@ export class PIIProtectionService {
     ];
 
     for (const field of piiFields) {
-      if (protected[field]) {
+      if (protectedData[field]) {
         const { encryptedData, metadata } = await this.encryptionService.encryptData(
-          String(protected[field]),
+          String(protectedData[field]),
           classification,
           DataType.PII,
           `pii_${field}`
         );
         
-        protected[field] = {
+        protectedData[field] = {
           encrypted: encryptedData,
           metadata: metadata
         };
       }
     }
 
-    return protected;
+    return protectedData;
   }
 
   async unprotectPII(data: any, context?: DecryptionContext): Promise<any> {
@@ -767,8 +767,7 @@ export class SecureDataStorageService {
   }
 }
 
-// Export main services
-export { KeyManagementService, AdvancedEncryptionService, PIIProtectionService, DataLossPreventionService, SecureDataStorageService };
+// Export main services (classes already exported above)
 
 // Create and export service instances
 const keyManager = new KeyManagementService();

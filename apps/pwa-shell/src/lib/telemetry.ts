@@ -1,23 +1,7 @@
 /**
- * OpenTelemetry Web Instrumentation for Grahmos PWA Shell
- * Provides comprehensive telemetry, metrics, and user analytics
+ * Simplified Telemetry for Grahmos PWA Shell
+ * Basic browser-side analytics and logging
  */
-
-import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
-import { WebSDK } from '@opentelemetry/sdk-web';
-import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { 
-  metrics,
-  trace,
-  context,
-  propagation,
-  SpanKind,
-  SpanStatusCode 
-} from '@opentelemetry/api';
-import { registerInstrumentations } from '@opentelemetry/instrumentation';
-import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch';
-import { UserInteractionInstrumentation } from '@opentelemetry/instrumentation-user-interaction';
 
 // Application configuration
 const APP_NAME = 'grahmos-pwa';
@@ -27,33 +11,24 @@ const ENVIRONMENT = process.env.NODE_ENV || 'development';
 // Telemetry configuration
 interface TelemetryConfig {
   enabled: boolean;
-  collectorUrl: string;
+  enableAnalytics: boolean;
+  enablePerformanceTracking: boolean;
+  enableErrorTracking: boolean;
   sampleRate: number;
-  enableUserInteraction: boolean;
-  enablePerformance: boolean;
-  enableErrors: boolean;
 }
 
 const defaultConfig: TelemetryConfig = {
   enabled: process.env.NEXT_PUBLIC_TELEMETRY_ENABLED !== 'false',
-  collectorUrl: process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318',
+  enableAnalytics: true,
+  enablePerformanceTracking: true,
+  enableErrorTracking: true,
   sampleRate: parseFloat(process.env.NEXT_PUBLIC_TELEMETRY_SAMPLE_RATE || '0.1'),
-  enableUserInteraction: true,
-  enablePerformance: true,
-  enableErrors: true,
 };
 
-class GrahmosTelemetry {
-  private sdk: WebSDK | null = null;
+class PWATelemetry {
   private isInitialized = false;
   private config: TelemetryConfig;
-  
-  // Metrics
-  private pageViewCounter: any;
-  private searchCounter: any;
-  private assistantInteractionCounter: any;
-  private errorCounter: any;
-  private performanceHistogram: any;
+  private metrics: Record<string, any> = {};
   
   constructor(config: Partial<TelemetryConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
@@ -65,364 +40,230 @@ class GrahmosTelemetry {
   
   private initialize() {
     try {
-      // Create resource with application metadata
-      const resource = new Resource({
-        [SemanticResourceAttributes.SERVICE_NAME]: APP_NAME,
-        [SemanticResourceAttributes.SERVICE_VERSION]: APP_VERSION,
-        [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: ENVIRONMENT,
-        [SemanticResourceAttributes.SERVICE_NAMESPACE]: 'grahmos',
-        'application.type': 'pwa',
-        'application.platform': 'web'
-      });
-      
-      // Configure SDK
-      this.sdk = new WebSDK({
-        resource,
-        instrumentations: getWebAutoInstrumentations({
-          '@opentelemetry/instrumentation-document-load': {
-            enabled: this.config.enablePerformance,
-          },
-          '@opentelemetry/instrumentation-user-interaction': {
-            enabled: this.config.enableUserInteraction,
-            eventNames: ['click', 'submit', 'keydown'],
-          },
-          '@opentelemetry/instrumentation-xml-http-request': {
-            enabled: true,
-            propagateTraceHeaderCorsUrls: /.*/,
-          },
-          '@opentelemetry/instrumentation-fetch': {
-            enabled: true,
-            propagateTraceHeaderCorsUrls: /.*/,
-            clearTimingResources: true,
-          },
-        }),
-        traceExporter: {
-          url: `${this.config.collectorUrl}/v1/traces`,
-        },
-        metricExporter: {
-          url: `${this.config.collectorUrl}/v1/metrics`,
-        },
-      });
-      
-      // Initialize SDK
-      this.sdk.start();
-      
-      // Initialize custom instrumentations
-      this.initializeCustomInstrumentations();
-      
-      // Initialize custom metrics
-      this.initializeMetrics();
+      // Initialize basic browser analytics
+      this.setupErrorTracking();
+      this.setupPerformanceTracking();
       
       this.isInitialized = true;
-      console.log('Grahmos Telemetry initialized successfully');
-      
+      console.log(`${APP_NAME} telemetry initialized successfully`);
     } catch (error) {
-      console.error('Failed to initialize Grahmos Telemetry:', error);
+      console.error(`Failed to initialize ${APP_NAME} telemetry:`, error);
     }
   }
   
-  private initializeCustomInstrumentations() {
-    // Custom fetch instrumentation for API calls
-    registerInstrumentations({
-      instrumentations: [
-        new FetchInstrumentation({
-          ignoreUrls: [
-            // Ignore telemetry endpoints to prevent loops
-            /.*\/v1\/(traces|metrics|logs).*/,
-          ],
-          applyCustomAttributesOnSpan: (span, request) => {
-            // Add custom attributes for Grahmos API calls
-            if (request.url.includes('/api/')) {
-              span.setAttributes({
-                'grahmos.api.endpoint': new URL(request.url).pathname,
-                'grahmos.api.version': request.url.includes('/v1/') ? 'v1' : 
-                                       request.url.includes('/v2/') ? 'v2' : 'unknown',
-              });
-            }
-          },
-        }),
-        
-        new UserInteractionInstrumentation({
-          eventNames: ['click', 'submit', 'change', 'keydown'],
-          shouldPreventSpanCreation: (eventType, element) => {
-            // Ignore tracking pixels and analytics elements
-            return element?.classList?.contains('no-telemetry') || false;
-          },
-        }),
-      ],
+  private setupErrorTracking() {
+    if (!this.config.enableErrorTracking) return;
+    
+    window.addEventListener('error', (event) => {
+      this.recordError(event.error, 'javascript', 'medium', {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+      });
+    });
+    
+    window.addEventListener('unhandledrejection', (event) => {
+      this.recordError(new Error(event.reason), 'promise', 'high', {
+        reason: event.reason,
+      });
     });
   }
   
-  private initializeMetrics() {
-    const meter = metrics.getMeter(APP_NAME, APP_VERSION);
+  private setupPerformanceTracking() {
+    if (!this.config.enablePerformanceTracking) return;
     
-    // Page view counter
-    this.pageViewCounter = meter.createCounter('grahmos_page_views_total', {
-      description: 'Total number of page views',
-      unit: '1',
-    });
-    
-    // Search metrics
-    this.searchCounter = meter.createCounter('grahmos_searches_total', {
-      description: 'Total number of searches performed',
-      unit: '1',
-    });
-    
-    // Assistant interaction metrics  
-    this.assistantInteractionCounter = meter.createCounter('grahmos_assistant_interactions_total', {
-      description: 'Total number of AI assistant interactions',
-      unit: '1',
-    });
-    
-    // Error counter
-    this.errorCounter = meter.createCounter('grahmos_errors_total', {
-      description: 'Total number of application errors',
-      unit: '1',
-    });
-    
-    // Performance metrics
-    this.performanceHistogram = meter.createHistogram('grahmos_operation_duration', {
-      description: 'Duration of various operations',
-      unit: 'ms',
-    });
-    
-    // Initialize performance observer for Core Web Vitals
-    this.initializeWebVitals();
-  }
-  
-  private initializeWebVitals() {
-    if (typeof window === 'undefined') return;
-    
-    // Largest Contentful Paint (LCP)
-    if ('PerformanceObserver' in window) {
-      try {
-        const observer = new PerformanceObserver((list) => {
-          const entries = list.getEntries();
-          const lastEntry = entries[entries.length - 1];
-          
-          this.recordMetric('core_web_vitals', {
-            metric: 'lcp',
-            value: lastEntry.startTime,
-            url: window.location.pathname,
+    // Track page load performance
+    if ('performance' in window && 'getEntriesByType' in window.performance) {
+      setTimeout(() => {
+        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+        if (navigation) {
+          this.recordPerformance('page_load', {
+            loadTime: navigation.loadEventEnd - navigation.loadEventStart,
+            domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+            firstByte: navigation.responseStart - navigation.requestStart,
           });
-        });
-        
-        observer.observe({ entryTypes: ['largest-contentful-paint'] });
-      } catch (error) {
-        console.warn('Could not initialize LCP observer:', error);
-      }
+        }
+      }, 1000);
     }
-    
-    // First Input Delay (FID) and Cumulative Layout Shift (CLS)
-    // These would be implemented similarly with appropriate performance observers
   }
   
   // Public API methods
   
   /**
-   * Record a page view
+   * Record page views
    */
-  recordPageView(pathname: string, additionalAttributes: Record<string, any> = {}) {
-    if (!this.isInitialized) return;
+  recordPageView(path: string, metadata: Record<string, any> = {}) {
+    if (!this.isInitialized || !this.config.enableAnalytics) return;
     
-    const attributes = {
-      'page.path': pathname,
-      'page.referrer': document.referrer,
-      'user_agent': navigator.userAgent,
-      ...additionalAttributes,
-    };
+    console.log(`Page View: ${path}`, metadata);
     
-    this.pageViewCounter?.add(1, attributes);
-    
-    // Create a span for the page view
-    const tracer = trace.getTracer(APP_NAME);
-    const span = tracer.startSpan('page_view', {
-      kind: SpanKind.CLIENT,
-      attributes,
-    });
-    
-    span.end();
+    this.metrics['page_views'] = (this.metrics['page_views'] || 0) + 1;
+    this.metrics[`page_${path}`] = (this.metrics[`page_${path}`] || 0) + 1;
   }
   
   /**
-   * Record a search operation
+   * Record search queries
    */
-  recordSearch(query: string, results: number, duration: number, source: 'local' | 'remote' = 'local') {
-    if (!this.isInitialized) return;
+  recordSearch(query: string, results: number, duration: number, source?: string) {
+    if (!this.isInitialized || !this.config.enableAnalytics) return;
     
-    const attributes = {
-      'search.query_length': query.length,
-      'search.results_count': results,
-      'search.source': source,
-      'search.has_results': results > 0,
-    };
+    console.log(`Search: "${query}" - ${results} results (${duration}ms) from ${source || 'unknown'}`);
     
-    this.searchCounter?.add(1, attributes);
-    this.performanceHistogram?.record(duration, {
-      ...attributes,
-      'operation': 'search',
-    });
-    
-    // Create search span
-    const tracer = trace.getTracer(APP_NAME);
-    const span = tracer.startSpan('search_operation', {
-      kind: SpanKind.CLIENT,
-      attributes: {
-        ...attributes,
-        'search.query_hash': this.hashQuery(query), // Privacy-safe query tracking
-      },
-    });
-    
-    span.setStatus({ code: SpanStatusCode.OK });
-    span.end();
+    this.metrics['searches'] = (this.metrics['searches'] || 0) + 1;
+    this.metrics['search_results_total'] = (this.metrics['search_results_total'] || 0) + results;
   }
   
   /**
-   * Record AI assistant interaction
+   * Record assistant interactions
    */
-  recordAssistantInteraction(
-    type: 'question' | 'command' | 'feedback',
-    duration: number,
-    success: boolean,
-    model?: string
+  recordAssistantInteraction(type: string, duration: number, success: boolean, model?: string) {
+    if (!this.isInitialized || !this.config.enableAnalytics) return;
+    
+    console.log(`AI Assistant: ${type} (${duration}ms) - ${success ? 'Success' : 'Failed'} with ${model || 'unknown'}`);
+    
+    this.metrics[`assistant_${type}`] = (this.metrics[`assistant_${type}`] || 0) + 1;
+  }
+  
+  /**
+   * Record custom metrics
+   */
+  recordMetric(name: string, data: Record<string, any>, value?: number) {
+    if (!this.isInitialized) return;
+    
+    console.log(`Metric: ${name}`, data);
+    
+    this.metrics[name] = value !== undefined ? value : data;
+  }
+  
+  /**
+   * Record errors
+   */
+  recordError(
+    error: Error,
+    type: 'javascript' | 'promise' | 'network' | 'user' | string,
+    severity: 'low' | 'medium' | 'high' | 'critical' = 'medium',
+    metadata: Record<string, any> = {}
   ) {
-    if (!this.isInitialized) return;
+    if (!this.isInitialized || !this.config.enableErrorTracking) return;
     
-    const attributes = {
-      'assistant.interaction_type': type,
-      'assistant.success': success,
-      'assistant.model': model || 'unknown',
-    };
+    console.error(`PWA Error [${type}/${severity}]:`, error.message, metadata);
     
-    this.assistantInteractionCounter?.add(1, attributes);
-    this.performanceHistogram?.record(duration, {
-      ...attributes,
-      'operation': 'assistant_interaction',
-    });
+    const errorKey = `error_${type}_${severity}`;
+    this.metrics[errorKey] = (this.metrics[errorKey] || 0) + 1;
   }
   
   /**
-   * Record an error
+   * Start a span for tracking operations
    */
-  recordError(error: Error, context: string, severity: 'low' | 'medium' | 'high' | 'critical' = 'medium') {
-    if (!this.isInitialized) return;
-    
-    const attributes = {
-      'error.type': error.name,
-      'error.message': error.message,
-      'error.context': context,
-      'error.severity': severity,
-      'page.path': window.location.pathname,
-    };
-    
-    this.errorCounter?.add(1, attributes);
-    
-    // Create error span
-    const tracer = trace.getTracer(APP_NAME);
-    const span = tracer.startSpan('error_occurred', {
-      kind: SpanKind.CLIENT,
-      attributes,
-    });
-    
-    span.recordException(error);
-    span.setStatus({ 
-      code: SpanStatusCode.ERROR, 
-      message: error.message 
-    });
-    span.end();
-  }
-  
-  /**
-   * Record custom metric
-   */
-  recordMetric(name: string, attributes: Record<string, any>, value: number = 1) {
-    if (!this.isInitialized) return;
-    
-    const meter = metrics.getMeter(APP_NAME, APP_VERSION);
-    const counter = meter.createCounter(`grahmos_${name}_total`);
-    counter.add(value, attributes);
-  }
-  
-  /**
-   * Start a custom operation span
-   */
-  startSpan(name: string, attributes: Record<string, any> = {}) {
+  startSpan(operationName: string, attributes: Record<string, any> = {}) {
     if (!this.isInitialized) return null;
     
-    const tracer = trace.getTracer(APP_NAME);
-    return tracer.startSpan(`grahmos_${name}`, {
-      kind: SpanKind.CLIENT,
-      attributes,
-    });
+    const spanId = `${operationName}_${Date.now()}`;
+    console.log(`Span started: ${spanId}`, attributes);
+    
+    return {
+      end: () => {
+        console.log(`Span ended: ${spanId}`);
+      },
+      setAttributes: (attrs: Record<string, any>) => {
+        console.log(`Span attributes: ${spanId}`, attrs);
+      },
+      recordException: (error: Error) => {
+        console.error(`Span exception: ${spanId}`, error);
+      },
+      setStatus: (status: any) => {
+        console.log(`Span status: ${spanId}`, status);
+      },
+    };
   }
   
   /**
-   * Set user context (privacy-conscious)
+   * Set user context for tracking
    */
   setUserContext(userId: string, attributes: Record<string, any> = {}) {
     if (!this.isInitialized) return;
     
-    // Hash user ID for privacy
-    const hashedUserId = this.hashUserId(userId);
+    console.log(`User context set: ${userId}`, attributes);
     
-    const userAttributes = {
-      'user.id': hashedUserId,
-      'user.session_id': this.getSessionId(),
-      ...attributes,
-    };
-    
-    // Set user context in active span
-    const activeSpan = trace.getActiveSpan();
-    if (activeSpan) {
-      activeSpan.setAttributes(userAttributes);
-    }
-  }
-  
-  // Utility methods
-  
-  private hashQuery(query: string): string {
-    // Simple hash for privacy-safe query tracking
-    let hash = 0;
-    for (let i = 0; i < query.length; i++) {
-      const char = query.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString(16);
-  }
-  
-  private hashUserId(userId: string): string {
-    // Hash user ID for privacy
-    return this.hashQuery(userId + 'grahmos_salt');
-  }
-  
-  private getSessionId(): string {
-    // Get or create session ID
-    if (typeof window === 'undefined') return 'unknown';
-    
-    let sessionId = sessionStorage.getItem('grahmos_session_id');
-    if (!sessionId) {
-      sessionId = Math.random().toString(36).substring(2, 15) + 
-                  Math.random().toString(36).substring(2, 15);
-      sessionStorage.setItem('grahmos_session_id', sessionId);
-    }
-    
-    return sessionId;
+    this.metrics['user_context'] = { userId, ...attributes };
   }
   
   /**
-   * Flush all pending telemetry data
+   * Track user interactions
+   */
+  trackInteraction(element: string, action: string, metadata: Record<string, any> = {}) {
+    if (!this.isInitialized || !this.config.enableAnalytics) return;
+    
+    console.log(`User Interaction: ${action} on ${element}`, metadata);
+    
+    this.metrics[`interaction_${action}`] = (this.metrics[`interaction_${action}`] || 0) + 1;
+  }
+  
+  /**
+   * Track custom events
+   */
+  trackEvent(category: string, action: string, label?: string, value?: number) {
+    if (!this.isInitialized || !this.config.enableAnalytics) return;
+    
+    console.log(`Event: ${category}/${action}`, { label, value });
+    
+    const eventKey = `event_${category}_${action}`;
+    this.metrics[eventKey] = (this.metrics[eventKey] || 0) + 1;
+  }
+  
+  /**
+   * Track API calls
+   */
+  trackAPICall(endpoint: string, method: string, duration: number, success: boolean) {
+    if (!this.isInitialized) return;
+    
+    console.log(`API Call: ${method} ${endpoint} (${duration}ms) - ${success ? 'Success' : 'Failed'}`);
+    
+    const apiKey = `api_${method.toLowerCase()}_${success ? 'success' : 'error'}`;
+    this.metrics[apiKey] = (this.metrics[apiKey] || 0) + 1;
+  }
+  
+  /**
+   * Record performance metrics
+   */
+  recordPerformance(metric: string, data: Record<string, number>) {
+    if (!this.isInitialized || !this.config.enablePerformanceTracking) return;
+    
+    console.log(`Performance: ${metric}`, data);
+    
+    this.metrics[`perf_${metric}`] = data;
+  }
+  
+  /**
+   * Get current metrics for debugging
+   */
+  getMetrics() {
+    return {
+      telemetry_initialized: this.isInitialized,
+      environment: ENVIRONMENT,
+      version: APP_VERSION,
+      metrics: this.metrics,
+    };
+  }
+  
+  /**
+   * Flush any pending data (no-op in simplified version)
    */
   async flush(): Promise<void> {
-    if (this.sdk) {
-      await this.sdk.shutdown();
-    }
+    console.log('Flushing PWA telemetry data...');
   }
 }
 
 // Create singleton instance
-const telemetry = new GrahmosTelemetry();
+const pwaTelemetry = new PWATelemetry();
 
-// Export singleton and class for custom configurations
-export { telemetry as default, GrahmosTelemetry };
+// Export singleton and class
+export { pwaTelemetry as default, PWATelemetry };
 export type { TelemetryConfig };
+
+// Graceful cleanup
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    pwaTelemetry.flush();
+  });
+}

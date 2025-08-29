@@ -72,6 +72,7 @@ export interface AccessContext {
       region?: string;
       city?: string;
     };
+    [key: string]: any;
   };
   sessionAttributes?: Record<string, any>;
 }

@@ -37,6 +37,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/speakeasy": "^2.0.10",
     "@types/cors": "^2.8.17",
+    "@types/saml2-js": "^3.0.4",
     "eslint": "^8.57.0",
     "tsx": "^4.16.0",
     "typescript": "^5.5.4",

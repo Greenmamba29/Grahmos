@@ -2,3 +2,24 @@ node_modules
 .next
 .DS_Store
 .env
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Turbo cache
+.turbo/
+
+# Generated files
+apps/pwa-shell/public/sw.js
+apps/pwa-shell/public/sw.js.map
+apps/pwa-shell/public/workbox-*.js
+apps/pwa-shell/public/workbox-*.js.map
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Lock files (keep pnpm-lock.yaml but ignore others)
+package-lock.json
+yarn.lock

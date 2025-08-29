@@ -13,6 +13,7 @@
 
 import { randomBytes, createHash } from 'crypto';
 import { sign, verify } from 'jsonwebtoken';
+// @ts-ignore - saml2-js doesn't have types
 import * as saml2 from 'saml2-js';
 import { Issuer, Client, generators, TokenSet } from 'openid-client';
 import type { User } from './auth-service';
