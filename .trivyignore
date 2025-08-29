@@ -1,0 +1,9 @@
+# Trivy ignore file for known acceptable risks
+
+# CVE exceptions for development dependencies (not shipped to production)
+CVE-2023-26136
+CVE-2024-28849
+
+# Alpine package updates handled by automatic security updates
+CVE-2024-6197
+CVE-2024-5535

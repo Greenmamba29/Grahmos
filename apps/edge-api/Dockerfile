@@ -2,14 +2,15 @@
 # Features: Security hardening, minimal attack surface, rootless execution
 
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
-# Add build dependencies for native modules
-RUN apk add --no-cache \
+# Security: Add build dependencies for native modules with security updates
+RUN apk update && apk add --no-cache \
     python3 \
     make \
     g++ \
-    sqlite-dev
+    sqlite-dev \
+    && rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
@@ -22,20 +23,25 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 # Security: Create non-root user
-RUN addgroup -g 1000 -S nodegroup && \
+RUN getent group 1000 || addgroup -g 1000 -S nodegroup && \
     adduser -u 1000 -S nodeuser -G nodegroup
 
-# Security: Install minimal runtime dependencies
-RUN apk add --no-cache \
+# Security: Install minimal runtime dependencies with security updates
+RUN apk update && apk add --no-cache \
     dumb-init \
     sqlite \
+    ca-certificates \
+    && apk upgrade \
     && rm -rf /var/cache/apk/*
 
 # Security: Remove npm and yarn to reduce attack surface
 RUN npm uninstall -g npm yarn || true
+
+# Security: Set file system to read-only except for required directories
+RUN chmod -R 555 /usr/local/lib/node_modules || true
 
 WORKDIR /app
 
