@@ -1,0 +1,6 @@
+
+
+> search-core@1.0.0 build /workspace/packages/search-core
+> echo "No build required for TypeScript module"
+
+No build required for TypeScript module

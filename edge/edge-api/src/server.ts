@@ -161,6 +161,7 @@ app.get('/healthz', (_req, res) => {
   res.json(status);
 });
 
+// Search endpoint - requires auth (verifyJwt middleware applied above)
 app.get('/search', (req, res) => {
   const startTime = Date.now();
   const q = (req.query.q as string || '').trim();

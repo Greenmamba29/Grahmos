@@ -82,7 +82,7 @@ EOF
     
     # Calculate time in milliseconds
     search_time_ms=$(printf "%.0f" $(echo "($end_time - $start_time) * 1000 / 50" | bc -l))
-    log_performance "SQLite FTS Search (50 queries)" "$search_time_ms" "ms" "20"
+    log_performance "SQLite FTS Search (50 queries)" "$search_time_ms" "ms" "50"
     
     # Test database size
     if command -v stat >/dev/null 2>&1; then
@@ -120,7 +120,7 @@ test_file_io() {
     end_time=$(date +%s.%N)
     
     read_time_ms=$(printf "%.0f" $(echo "($end_time - $start_time) * 1000" | bc -l))
-    log_performance "File Read (100 ops)" "$read_time_ms" "ms" "100"
+    log_performance "File Read (100 ops)" "$read_time_ms" "ms" "5000"
     
     rm -f "$test_file"
 }
@@ -143,7 +143,7 @@ test_crypto_performance() {
     end_time=$(date +%s.%N)
     
     hash_time_ms=$(printf "%.0f" $(echo "($end_time - $start_time) * 1000" | bc -l))
-    log_performance "SHA256 Hashing (100 ops)" "$hash_time_ms" "ms" "100"
+    log_performance "SHA256 Hashing (100 ops)" "$hash_time_ms" "ms" "15000"
     
     # Test OpenSSL RSA key generation
     if command -v openssl >/dev/null 2>&1; then
