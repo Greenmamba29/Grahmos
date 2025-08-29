@@ -1,8 +1,8 @@
-# Multi-stage Dockerfile for Grahmos Edge API
-# Features: Security hardening, minimal attack surface, rootless execution
+# syntax=docker/dockerfile:1.7
+# Multi-stage Dockerfile for Grahmos Edge API (CI/CD Optimized)
+# Features: PNPM support, caching optimization, security hardening
 
-# Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS base
 
 # Add build dependencies for native modules
 RUN apk add --no-cache \
@@ -13,16 +13,16 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+# Copy package files and enable PNPM
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate && pnpm fetch
 
-# Copy source code and build
+# Copy source and install dependencies
 COPY . .
-RUN npm run build
+RUN pnpm install --offline && pnpm build
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:20-alpine
 
 # Security: Create non-root user
 RUN addgroup -g 1000 -S nodegroup && \
@@ -34,24 +34,22 @@ RUN apk add --no-cache \
     sqlite \
     && rm -rf /var/cache/apk/*
 
-# Security: Remove npm and yarn to reduce attack surface
-RUN npm uninstall -g npm yarn || true
-
 WORKDIR /app
 
-# Security: Set proper ownership and permissions
-RUN chown -R nodeuser:nodegroup /app && \
-    chmod 750 /app
+# Set production environment
+ENV NODE_ENV=production
 
-# Copy built application from builder stage
-COPY --from=builder --chown=nodeuser:nodegroup /app/dist ./dist
-COPY --from=builder --chown=nodeuser:nodegroup /app/node_modules ./node_modules
-COPY --from=builder --chown=nodeuser:nodegroup /app/package.json ./
+# Copy built application from base stage
+COPY --from=base /app/dist ./dist
+COPY --from=base /app/package.json ./package.json
+
+# Install production dependencies with PNPM
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate && pnpm install --prod --ignore-scripts --no-optional
 
 # Create required directories with proper permissions
-RUN mkdir -p /app/logs /data/indexes && \
-    chown nodeuser:nodegroup /app/logs /data/indexes && \
-    chmod 755 /app/logs /data/indexes
+RUN mkdir -p /app/logs /data/indexes /var/run/edge && \
+    chown -R nodeuser:nodegroup /app /var/run/edge && \
+    chmod 755 /app/logs /data/indexes /var/run/edge
 
 # Security: Switch to non-root user
 USER nodeuser
@@ -66,8 +64,8 @@ ENTRYPOINT ["dumb-init", "--"]
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "require('fs').existsSync('/var/run/edge/edge.sock') ? process.exit(0) : require('http').get('http://localhost:3000/health', (res) => { res.statusCode === 200 ? process.exit(0) : process.exit(1) }).on('error', () => process.exit(1))"
 
-# Start the application
-CMD ["node", "dist/server.js"]
+# Runtime expects to bind to UDS at /var/run/edge/edge.sock
+CMD ["node","dist/server.js"]
 
 # Metadata
 LABEL \

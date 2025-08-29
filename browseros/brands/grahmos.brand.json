@@ -1,0 +1,114 @@
+{
+  "name": "GrahmOS",
+  "productName": "GrahmOS - Decentralized Operating System",
+  "bundleId": "com.grahmos.os",
+  "version": "1.0.0",
+  "description": "AI-powered, P2P-native, decentralized operating system with integrated search and mapping",
+  
+  "theme": {
+    "primary": "#3B82F6",
+    "accent": "#22D3EE", 
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "error": "#EF4444",
+    "darkMode": "system",
+    "backgroundGradient": "linear-gradient(135deg, #1a365d 0%, #2a69ac 100%)"
+  },
+  
+  "icons": {
+    "winIco": "assets/icons/win/grahmos.ico",
+    "macIcns": "assets/icons/mac/grahmos.icns", 
+    "linuxPng": "assets/icons/linux/grahmos.png",
+    "favicon": "assets/icons/favicon.ico",
+    "logo": "assets/logos/grahmos-logo.svg",
+    "logoMark": "assets/logos/grahmos-mark.svg"
+  },
+  
+  "urls": {
+    "homepage": "https://grahmos.localhost:3000",
+    "newTab": "https://grahmos.localhost:3000/launch",
+    "search": "https://grahmos.localhost:8787/search",
+    "edgeHost": "https://grahmos.localhost:8787"
+  },
+  
+  "defaultSearchProvider": {
+    "name": "Grahmos Search",
+    "keyword": "g",
+    "searchUrl": "https://grahmos.localhost:8787/search?q={searchTerms}",
+    "suggestUrl": "https://grahmos.localhost:8787/suggest?q={searchTerms}",
+    "iconUrl": "https://grahmos.localhost:8787/assets/search-icon.png",
+    "encoding": "UTF-8"
+  },
+  
+  "features": {
+    "p2pNetworking": true,
+    "emergencyMode": true,
+    "offlineFirst": true,
+    "aiAssistant": true,
+    "cryptoVerification": true,
+    "3dMapping": true,
+    "darkMode": true
+  },
+  
+  "build": {
+    "outputName": "GrahmOS",
+    "manufacturer": "Grahmos Foundation",
+    "copyright": "© 2024 Grahmos Foundation. All rights reserved.",
+    "license": "AGPL-3.0",
+    "arch": ["x64", "arm64"],
+    "platforms": ["win32", "darwin", "linux"]
+  },
+  
+  "security": {
+    "codeSign": true,
+    "notarize": true,
+    "allowUnsignedExtensions": false,
+    "sandboxed": false
+  },
+  
+  "distribution": {
+    "autoUpdate": true,
+    "channels": {
+      "stable": "https://releases.grahmos.org/stable",
+      "beta": "https://releases.grahmos.org/beta", 
+      "dev": "https://releases.grahmos.org/dev"
+    },
+    "updateCheckInterval": "24h"
+  },
+  
+  "ui": {
+    "windowTitle": "GrahmOS",
+    "splashScreen": {
+      "enabled": true,
+      "background": "#1a365d",
+      "logo": "assets/splash/grahmos-splash.svg",
+      "text": "Starting GrahmOS...",
+      "textColor": "#ffffff"
+    },
+    "sidebar": {
+      "defaultWidth": 280,
+      "collapsible": true,
+      "bookmarks": [
+        { "name": "Emergency", "url": "/emergency", "icon": "🚨" },
+        { "name": "Search", "url": "/search", "icon": "🔍" },
+        { "name": "Mapping", "url": "/mapping", "icon": "🗺️" },
+        { "name": "P2P Network", "url": "/network", "icon": "🌐" }
+      ]
+    }
+  },
+  
+  "integration": {
+    "grahmos": {
+      "pwaUrl": "https://grahmos.localhost:3000",
+      "edgeUrl": "https://grahmos.localhost:8787",
+      "p2pBootstrap": [
+        "/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWGRhKZ8w2KsZRJJ5FVjHZ8j6hYQJ7FHsT7zN1sQ2FdEcB"
+      ],
+      "defaultPacks": [
+        "emergency-response",
+        "first-aid", 
+        "survival-guide"
+      ]
+    }
+  }
+}

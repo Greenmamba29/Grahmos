@@ -23,7 +23,13 @@
     "create:msi": "node scripts/create-msi.js",
     "create:deb": "node scripts/create-deb.js",
     "create:appimage": "node scripts/create-appimage.js",
-    "test:installer": "node scripts/test-installer.js"
+    "test:installer": "node scripts/test-installer.js",
+    "publish:latest": "GRAHMOS_RELEASE_CHANNEL=latest electron-builder --publish=always",
+    "publish:beta": "GRAHMOS_RELEASE_CHANNEL=beta electron-builder --publish=always",
+    "release:latest": "npm run build:all && npm run publish:latest",
+    "release:beta": "npm run build:all && npm run publish:beta",
+    "version:bump": "node scripts/version-bump.js",
+    "changelog:generate": "node scripts/generate-changelog.js"
   },
   "build": {
     "appId": "com.grahmos.desktop",
@@ -33,6 +39,24 @@
       "buildResources": "assets",
       "output": "build"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "grahmos",
+        "repo": "desktop",
+        "releaseType": "release"
+      },
+      {
+        "provider": "generic",
+        "url": "https://releases.grahmos.com/latest",
+        "channel": "latest"
+      },
+      {
+        "provider": "generic",
+        "url": "https://releases.grahmos.com/beta",
+        "channel": "beta"
+      }
+    ],
     "files": [
       "src/**/*",
       "assets/**/*",

@@ -49,6 +49,7 @@
     "security:scan": "./scripts/security-audit.sh",
     "health:check": "./scripts/health-check.sh",
     "backup:create": "./scripts/disaster-recovery.sh backup",
+    "test:auto-update": "node scripts/test-auto-update.js",
     "postinstall": "husky install"
   },
   "devDependencies": {

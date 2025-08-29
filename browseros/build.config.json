@@ -1,0 +1,175 @@
+{
+  "name": "GrahmOS",
+  "version": "1.0.0-beta.1",
+  "description": "GrahmOS - AI-powered, P2P-native, decentralized operating system",
+  "author": "Grahmos Foundation",
+  "license": "AGPL-3.0",
+  
+  "build": {
+    "brandConfig": "brands/grahmos.brand.json",
+    "policyConfig": "policies/grahmos-policy.json",
+    "outputDir": "dist",
+    "tempDir": "temp",
+    "assetsDir": "assets",
+    
+    "platforms": {
+      "windows": {
+        "enabled": true,
+        "arch": ["x64", "arm64"],
+        "installer": {
+          "type": "msi",
+          "signTool": "signtool.exe",
+          "certificateFile": "certs/grahmos-windows.p12",
+          "timestampServer": "http://timestamp.digicert.com"
+        },
+        "policies": "policies/windows/registry.reg"
+      },
+      
+      "macos": {
+        "enabled": true, 
+        "arch": ["x64", "arm64"],
+        "installer": {
+          "type": "dmg",
+          "signIdentity": "Developer ID Application: Grahmos Foundation",
+          "notarize": true,
+          "appleId": "developer@grahmos.org",
+          "teamId": "GRAHMOS123"
+        },
+        "policies": "policies/macos/com.grahmos.os.plist"
+      },
+      
+      "linux": {
+        "enabled": true,
+        "arch": ["x64", "arm64"],
+        "installer": {
+          "types": ["deb", "rpm", "AppImage"],
+          "maintainer": "Grahmos Foundation <support@grahmos.org>",
+          "category": "Network"
+        },
+        "policies": "policies/linux/grahmos.json"
+      }
+    },
+    
+    "chromium": {
+      "version": "121.0.6167.85",
+      "channel": "stable",
+      "customPatches": [
+        "patches/grahmos-branding.patch",
+        "patches/p2p-integration.patch",
+        "patches/search-provider.patch"
+      ],
+      "buildFlags": [
+        "--enable-features=VaapiVideoDecoder,VaapiVideoEncoder",
+        "--disable-features=MediaRouter,DialMediaRouteProvider",
+        "--force-dark-mode",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-sync"
+      ]
+    },
+    
+    "resources": {
+      "icons": {
+        "source": "assets/icons/",
+        "formats": {
+          "ico": [16, 32, 48, 64, 128, 256],
+          "icns": [16, 32, 64, 128, 256, 512, 1024],
+          "png": [16, 24, 32, 48, 64, 96, 128, 256, 512, 1024]
+        }
+      },
+      "splash": {
+        "source": "assets/splash/",
+        "template": "grahmos-splash.svg"
+      },
+      "branding": {
+        "source": "assets/branding/",
+        "includes": ["logo.svg", "wordmark.svg", "favicon.ico"]
+      }
+    }
+  },
+  
+  "distribution": {
+    "channels": ["stable", "beta", "dev"],
+    "releaseNotes": "CHANGELOG.md",
+    "updateServer": "https://releases.grahmos.org",
+    "checksums": ["sha256", "sha512"],
+    "compression": "zstd",
+    
+    "repositories": {
+      "github": {
+        "owner": "grahmos",
+        "repo": "GrahmOS",
+        "token": "${GITHUB_TOKEN}"
+      },
+      "s3": {
+        "bucket": "grahmos-releases",
+        "region": "us-east-1",
+        "accessKey": "${AWS_ACCESS_KEY_ID}",
+        "secretKey": "${AWS_SECRET_ACCESS_KEY}"
+      }
+    }
+  },
+  
+  "integration": {
+    "grahmos": {
+      "preload": {
+        "pwa": "https://grahmos.localhost:3000",
+        "edge": "https://grahmos.localhost:8787",
+        "offline": true
+      },
+      "services": [
+        {
+          "name": "grahmos-search",
+          "port": 3000,
+          "healthcheck": "/health"
+        },
+        {
+          "name": "grahmos-edge", 
+          "port": 8787,
+          "healthcheck": "/health"
+        }
+      ],
+      "bootstrap": {
+        "p2p": [
+          "/ip4/127.0.0.1/tcp/4001/p2p/12D3KooWGRhKZ8w2KsZRJJ5FVjHZ8j6hYQJ7FHsT7zN1sQ2FdEcB"
+        ],
+        "content": [
+          "emergency-response.pack",
+          "first-aid.pack",
+          "survival-guide.pack"
+        ]
+      }
+    }
+  },
+  
+  "testing": {
+    "platforms": ["win32", "darwin", "linux"],
+    "browsers": ["chromium"],
+    "e2e": {
+      "framework": "playwright",
+      "tests": "tests/e2e/**/*.spec.ts"
+    },
+    "integration": {
+      "framework": "jest",
+      "tests": "tests/integration/**/*.test.ts"
+    }
+  },
+  
+  "ci": {
+    "provider": "github-actions",
+    "triggers": ["push", "pull_request"],
+    "matrix": {
+      "os": ["ubuntu-latest", "windows-latest", "macos-latest"],
+      "node": ["20.x"],
+      "python": ["3.11"]
+    },
+    "secrets": [
+      "GITHUB_TOKEN",
+      "APPLE_CERTIFICATE_PASSWORD",
+      "WINDOWS_CERTIFICATE_PASSWORD",
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY"
+    ]
+  }
+}

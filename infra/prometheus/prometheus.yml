@@ -20,6 +20,7 @@ alerting:
 rule_files:
   - "rules/*.yml"
   - "alerts/*.yml"
+  - "rules/grahmos-alerts.yml"
 
 # Scrape configurations
 scrape_configs:
@@ -175,6 +176,36 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: service
         replacement: 'grahmos-health'
+
+  # Grahmos PWA Telemetry (via OTEL Collector)
+  - job_name: 'grahmos-pwa'
+    static_configs:
+      - targets: ['otel-collector:8888']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'grahmos-pwa'
+      - source_labels: [__name__]
+        regex: 'grahmos_.*'
+        target_label: component
+        replacement: 'pwa'
+
+  # Grahmos Assistant Telemetry
+  - job_name: 'grahmos-assistant'
+    static_configs:
+      - targets: ['assistant:9464']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: 'grahmos-assistant'
+      - source_labels: [__name__]
+        regex: 'assistant_.*'
+        target_label: component
+        replacement: 'assistant'
 
 # Storage configuration
 storage:

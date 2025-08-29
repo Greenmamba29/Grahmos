@@ -1,0 +1,380 @@
+version: '3.8'
+
+# Grahmos Auto-Update Server Infrastructure
+# Provides secure, signed updates for Electron apps and mobile clients
+
+services:
+  # Update Server - Core update distribution service
+  update-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: grahmos-update-server
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      
+      # Database Configuration
+      DATABASE_URL: postgresql://update_user:${DB_PASSWORD}@postgres:5432/grahmos_updates
+      
+      # Security Configuration  
+      JWT_SECRET: ${JWT_SECRET}
+      SIGNATURE_PUBLIC_KEY: ${SIGNATURE_PUBLIC_KEY}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      
+      # Update Configuration
+      UPDATE_STORAGE_PATH: /app/updates
+      MAX_DOWNLOAD_SIZE: 100MB
+      STAGING_ROLLOUT_PERCENTAGE: ${STAGING_ROLLOUT_PERCENTAGE:-10}
+      
+      # Platform Support
+      SUPPORTED_PLATFORMS: "darwin,win32,linux,android,ios"
+      
+      # Monitoring
+      METRICS_ENABLED: true
+      LOG_LEVEL: info
+      
+      # Rate Limiting
+      RATE_LIMIT_WINDOW: 900000  # 15 minutes
+      RATE_LIMIT_MAX_REQUESTS: 50
+      
+    ports:
+      - "${UPDATE_SERVER_PORT:-8080}:3000"
+    
+    volumes:
+      - update-storage:/app/updates
+      - update-logs:/app/logs
+      - ./configs/server.json:/app/config/production.json:ro
+      - /etc/ssl/certs:/etc/ssl/certs:ro  # System CA certificates
+    
+    networks:
+      - update-network
+      - monitoring-network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "node", "/app/scripts/health-check.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    user: "1001:1001"
+    read_only: true
+    tmpfs:
+      - /tmp:size=100M,noexec,nosuid,nodev
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # PostgreSQL - Update metadata and rollout tracking
+  postgres:
+    image: postgres:15-alpine
+    container_name: grahmos-update-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: grahmos_updates
+      POSTGRES_USER: update_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=md5 --auth-local=trust"
+    
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+      - postgres-logs:/var/log/postgresql
+    
+    networks:
+      - update-network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U update_user -d grahmos_updates"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+      - DAC_READ_SEARCH
+    user: "999:999"
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+
+  # Redis - Caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: grahmos-update-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 60
+      --timeout 300
+    
+    volumes:
+      - redis-data:/data
+      - redis-logs:/var/log/redis
+    
+    networks:
+      - update-network
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "999:999"
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+
+  # NGINX - Load balancer and TLS termination
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: grahmos-update-nginx
+    restart: unless-stopped
+    
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../certificates/production:/etc/nginx/certs:ro
+      - nginx-logs:/var/log/nginx
+    
+    networks:
+      - update-network
+    
+    depends_on:
+      - update-server
+    
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETGID
+      - SETUID
+    user: "nginx"
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=100M,noexec,nosuid,nodev
+      - /var/run:size=10M,noexec,nosuid,nodev
+      - /tmp:size=10M,noexec,nosuid,nodev
+
+  # Prometheus - Metrics collection for update server
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: grahmos-update-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    
+    networks:
+      - monitoring-network
+    
+    ports:
+      - "127.0.0.1:9090:9090"
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "65534:65534"
+
+  # Backup Service - Automated backups
+  backup:
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    container_name: grahmos-update-backup
+    restart: unless-stopped
+    environment:
+      BACKUP_SCHEDULE: "0 2 * * *"  # Daily at 2 AM
+      BACKUP_RETENTION_DAYS: 30
+      
+      # S3 Configuration for backup storage
+      S3_BUCKET: ${BACKUP_S3_BUCKET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      
+      # Encryption
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY}
+    
+    volumes:
+      - postgres-data:/backup/postgres:ro
+      - redis-data:/backup/redis:ro  
+      - update-storage:/backup/updates:ro
+      - backup-logs:/var/log/backup
+    
+    networks:
+      - update-network
+    
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    user: "1002:1002"
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.05'
+          memory: 64M
+
+# Networks
+networks:
+  update-network:
+    driver: bridge
+    name: grahmos-update-network
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  
+  monitoring-network:
+    driver: bridge
+    name: grahmos-monitoring-network
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+
+# Volumes
+volumes:
+  update-storage:
+    driver: local
+    name: grahmos-update-storage
+    driver_opts:
+      type: none
+      o: bind
+      device: ${UPDATE_STORAGE_PATH:-./data/updates}
+  
+  postgres-data:
+    driver: local
+    name: grahmos-update-postgres-data
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH:-./data}/postgres
+  
+  redis-data:
+    driver: local
+    name: grahmos-update-redis-data
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH:-./data}/redis
+  
+  prometheus-data:
+    driver: local
+    name: grahmos-update-prometheus-data
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH:-./data}/prometheus
+  
+  update-logs:
+    driver: local
+    name: grahmos-update-logs
+  
+  postgres-logs:
+    driver: local
+    name: grahmos-postgres-logs
+  
+  redis-logs:
+    driver: local
+    name: grahmos-redis-logs
+  
+  nginx-logs:
+    driver: local
+    name: grahmos-nginx-logs
+  
+  backup-logs:
+    driver: local
+    name: grahmos-backup-logs
+
+# Labels for container identification
+x-labels: &labels
+  com.grahmos.service: "update-server"
+  com.grahmos.version: "2.0.0"
+  com.grahmos.environment: "production"

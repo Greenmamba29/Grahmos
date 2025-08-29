@@ -1,0 +1,546 @@
+# Grahmos SLA/SLO Monitoring Dashboard Configuration
+# Production monitoring for emergency communication services
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grahmos-sla-slo-config
+  namespace: monitoring
+data:
+  # Service Level Agreements (SLAs)
+  sla-definitions.yaml: |
+    service_level_agreements:
+      # Critical Emergency Services
+      emergency_communications:
+        name: "Emergency Communications SLA"
+        service_tier: "critical"
+        availability_target: "99.95%"  # 21.9 minutes downtime/month
+        response_time_target: "< 500ms"
+        throughput_target: "10,000 messages/second"
+        error_rate_target: "< 0.01%"
+        
+        penalties:
+          - threshold: "99.9%"
+            penalty: "10% monthly credit"
+          - threshold: "99.5%"
+            penalty: "25% monthly credit"
+          - threshold: "99.0%"
+            penalty: "50% monthly credit"
+            
+      p2p_mesh_network:
+        name: "P2P Mesh Network SLA"
+        service_tier: "critical"
+        availability_target: "99.99%"  # 4.38 minutes downtime/month
+        peer_connectivity_target: "> 95%"
+        message_delivery_target: "99.9%"
+        network_partition_recovery: "< 30 seconds"
+        
+      edge_gateways:
+        name: "Edge Gateway Services SLA"
+        service_tier: "high"
+        availability_target: "99.9%"   # 43.8 minutes downtime/month
+        response_time_target: "< 1000ms"
+        concurrent_users_target: "5,000 per gateway"
+        content_sync_target: "< 5 minutes"
+        
+      mobile_applications:
+        name: "Mobile Applications SLA"
+        service_tier: "high"
+        availability_target: "99.9%"
+        app_launch_time: "< 3 seconds"
+        offline_mode_activation: "< 10 seconds"
+        push_notification_delivery: "< 30 seconds"
+
+  # Service Level Objectives (SLOs)
+  slo-definitions.yaml: |
+    service_level_objectives:
+      # Availability SLOs
+      service_availability:
+        - name: "P2P Network Uptime"
+          target: "99.99%"
+          measurement_window: "30d"
+          query: "up{job='p2p-network'}"
+          threshold: 0.9999
+          
+        - name: "Edge Gateway Uptime" 
+          target: "99.9%"
+          measurement_window: "30d"
+          query: "up{job='edge-gateway'}"
+          threshold: 0.999
+          
+        - name: "Mobile App Backend Uptime"
+          target: "99.9%"
+          measurement_window: "30d" 
+          query: "up{job='mobile-backend'}"
+          threshold: 0.999
+          
+      # Performance SLOs
+      response_time:
+        - name: "API Response Time p95"
+          target: "< 500ms"
+          measurement_window: "5m"
+          query: "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))"
+          threshold: 0.5
+          
+        - name: "Message Delivery Latency p99"
+          target: "< 1000ms"
+          measurement_window: "5m"
+          query: "histogram_quantile(0.99, rate(message_delivery_duration_seconds_bucket[5m]))"
+          threshold: 1.0
+          
+        - name: "Content Sync Time p90"
+          target: "< 30 seconds"
+          measurement_window: "15m"
+          query: "histogram_quantile(0.90, rate(content_sync_duration_seconds_bucket[15m]))"
+          threshold: 30
+          
+      # Error Rate SLOs
+      error_rates:
+        - name: "HTTP Error Rate"
+          target: "< 0.1%"
+          measurement_window: "5m"
+          query: "rate(http_requests_total{status=~'5..'}[5m]) / rate(http_requests_total[5m])"
+          threshold: 0.001
+          
+        - name: "Message Delivery Error Rate"
+          target: "< 0.01%"
+          measurement_window: "5m"
+          query: "rate(message_delivery_failures_total[5m]) / rate(message_delivery_attempts_total[5m])"
+          threshold: 0.0001
+          
+        - name: "P2P Connection Error Rate"
+          target: "< 1%"
+          measurement_window: "5m"
+          query: "rate(p2p_connection_failures_total[5m]) / rate(p2p_connection_attempts_total[5m])"
+          threshold: 0.01
+          
+      # Capacity SLOs
+      resource_utilization:
+        - name: "CPU Utilization"
+          target: "< 80%"
+          measurement_window: "5m"
+          query: "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)"
+          threshold: 80
+          
+        - name: "Memory Utilization"
+          target: "< 85%"
+          measurement_window: "5m"
+          query: "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100"
+          threshold: 85
+          
+        - name: "Disk Utilization"
+          target: "< 90%"
+          measurement_window: "5m"
+          query: "(node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes * 100"
+          threshold: 90
+
+  # Grafana Dashboard Configuration
+  grafana-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Grahmos SLA/SLO Monitoring",
+        "tags": ["grahmos", "sla", "slo", "emergency"],
+        "timezone": "UTC",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Service Level Agreement Status",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "avg(up{job='p2p-network'})",
+                "legendFormat": "P2P Network"
+              },
+              {
+                "expr": "avg(up{job='edge-gateway'})",
+                "legendFormat": "Edge Gateways"
+              },
+              {
+                "expr": "avg(up{job='mobile-backend'})",
+                "legendFormat": "Mobile Backend"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 0.99},
+                    {"color": "green", "value": 0.999}
+                  ]
+                },
+                "unit": "percentunit"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Response Time SLOs",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+                "legendFormat": "API Response Time p95"
+              },
+              {
+                "expr": "histogram_quantile(0.99, rate(message_delivery_duration_seconds_bucket[5m]))",
+                "legendFormat": "Message Delivery p99"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Response Time (seconds)",
+                "max": 2,
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Error Budgets",
+            "type": "bargauge",
+            "targets": [
+              {
+                "expr": "1 - (rate(http_requests_total{status=~'5..'}[30d]) / rate(http_requests_total[30d]))",
+                "legendFormat": "HTTP Requests"
+              },
+              {
+                "expr": "1 - (rate(message_delivery_failures_total[30d]) / rate(message_delivery_attempts_total[30d]))",
+                "legendFormat": "Message Delivery"
+              },
+              {
+                "expr": "1 - (rate(p2p_connection_failures_total[30d]) / rate(p2p_connection_attempts_total[30d]))",
+                "legendFormat": "P2P Connections"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "thresholds": {
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "yellow", "value": 0.95},
+                    {"color": "green", "value": 0.99}
+                  ]
+                },
+                "unit": "percentunit",
+                "max": 1,
+                "min": 0.95
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+          },
+          {
+            "id": 4,
+            "title": "Emergency Response Metrics",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "rate(emergency_mode_activations_total[1h])",
+                "legendFormat": "Emergency Activations/Hour"
+              },
+              {
+                "expr": "avg(emergency_response_time_seconds)",
+                "legendFormat": "Emergency Response Time"
+              },
+              {
+                "expr": "sum(p2p_peer_count)",
+                "legendFormat": "Active P2P Peers"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "palette-classic"},
+                "custom": {
+                  "displayMode": "list",
+                  "orientation": "horizontal"
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+          },
+          {
+            "id": 5,
+            "title": "Resource Utilization",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
+                "legendFormat": "CPU Utilization %"
+              },
+              {
+                "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100",
+                "legendFormat": "Memory Utilization %"
+              },
+              {
+                "expr": "(node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes * 100",
+                "legendFormat": "Disk Utilization %"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Utilization %",
+                "max": 100,
+                "min": 0
+              }
+            ],
+            "thresholds": [
+              {"value": 80, "colorMode": "critical", "op": "gt"},
+              {"value": 85, "colorMode": "critical", "op": "gt"},
+              {"value": 90, "colorMode": "critical", "op": "gt"}
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "5s"
+      }
+    }
+
+  # Alerting Rules
+  prometheus-alerts.yaml: |
+    groups:
+      - name: grahmos-sla-violations
+        interval: 30s
+        rules:
+          # Availability Alerts
+          - alert: ServiceDowntime
+            expr: up{job=~"p2p-network|edge-gateway|mobile-backend"} == 0
+            for: 1m
+            labels:
+              severity: critical
+              sla_impact: "high"
+            annotations:
+              summary: "{{ $labels.job }} service is down"
+              description: "Service {{ $labels.job }} has been down for more than 1 minute, impacting SLA"
+              runbook_url: "https://runbooks.grahmos.io/service-downtime"
+              
+          - alert: AvailabilitySLAViolation
+            expr: avg_over_time(up{job="p2p-network"}[30d]) < 0.9999
+            for: 5m
+            labels:
+              severity: critical
+              sla_impact: "critical"
+            annotations:
+              summary: "P2P Network availability SLA violation"
+              description: "P2P Network availability has dropped below 99.99% SLA target"
+              
+          # Performance Alerts
+          - alert: ResponseTimeSLOViolation
+            expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+            for: 2m
+            labels:
+              severity: warning
+              slo_impact: "medium"
+            annotations:
+              summary: "API response time SLO violation"
+              description: "95th percentile response time is {{ $value }}s, exceeding 500ms target"
+              
+          - alert: MessageDeliveryLatency
+            expr: histogram_quantile(0.99, rate(message_delivery_duration_seconds_bucket[5m])) > 1.0
+            for: 2m
+            labels:
+              severity: warning
+              slo_impact: "medium"
+            annotations:
+              summary: "Message delivery latency SLO violation"
+              description: "99th percentile message delivery time is {{ $value }}s, exceeding 1s target"
+              
+          # Error Rate Alerts
+          - alert: HighErrorRate
+            expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.001
+            for: 1m
+            labels:
+              severity: critical
+              slo_impact: "high"
+            annotations:
+              summary: "High error rate detected"
+              description: "HTTP error rate is {{ $value | humanizePercentage }}, exceeding 0.1% target"
+              
+          - alert: MessageDeliveryFailures
+            expr: rate(message_delivery_failures_total[5m]) / rate(message_delivery_attempts_total[5m]) > 0.0001
+            for: 1m
+            labels:
+              severity: critical
+              slo_impact: "critical"
+            annotations:
+              summary: "High message delivery failure rate"
+              description: "Message delivery failure rate is {{ $value | humanizePercentage }}, exceeding 0.01% target"
+              
+          # Resource Utilization Alerts
+          - alert: HighCPUUtilization
+            expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+            for: 5m
+            labels:
+              severity: warning
+              capacity_impact: "medium"
+            annotations:
+              summary: "High CPU utilization on {{ $labels.instance }}"
+              description: "CPU utilization is {{ $value }}%, exceeding 80% threshold"
+              
+          - alert: HighMemoryUtilization
+            expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+            for: 5m
+            labels:
+              severity: warning
+              capacity_impact: "medium"
+            annotations:
+              summary: "High memory utilization on {{ $labels.instance }}"
+              description: "Memory utilization is {{ $value }}%, exceeding 85% threshold"
+              
+          # Emergency Communication Alerts
+          - alert: EmergencyModeActivation
+            expr: increase(emergency_mode_activations_total[1h]) > 10
+            for: 0s
+            labels:
+              severity: info
+              emergency_impact: "high"
+            annotations:
+              summary: "High number of emergency mode activations"
+              description: "{{ $value }} emergency mode activations in the last hour"
+              
+          - alert: P2PNetworkPartition
+            expr: sum(p2p_peer_count) < 3
+            for: 2m
+            labels:
+              severity: critical
+              emergency_impact: "critical"
+            annotations:
+              summary: "P2P network partition detected"
+              description: "Only {{ $value }} P2P peers connected, network may be partitioned"
+              
+          # Capacity Planning Alerts
+          - alert: CapacityPlanningRequired
+            expr: predict_linear(rate(http_requests_total[1h])[24h:1h], 7*24*3600) > 1000000
+            for: 10m
+            labels:
+              severity: info
+              capacity_impact: "planning"
+            annotations:
+              summary: "Capacity planning required"
+              description: "Request rate trending towards capacity limits in 7 days"
+
+  # SLI (Service Level Indicator) Recording Rules
+  prometheus-recording-rules.yaml: |
+    groups:
+      - name: grahmos-sli-recording
+        interval: 30s
+        rules:
+          # Availability SLIs
+          - record: sli:service_availability:rate5m
+            expr: avg by (service) (up{job=~"p2p-network|edge-gateway|mobile-backend"})
+            
+          - record: sli:service_availability:rate30d
+            expr: avg_over_time(sli:service_availability:rate5m[30d])
+            
+          # Performance SLIs
+          - record: sli:http_request_latency:p95:rate5m
+            expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+            
+          - record: sli:message_delivery_latency:p99:rate5m
+            expr: histogram_quantile(0.99, rate(message_delivery_duration_seconds_bucket[5m]))
+            
+          # Error Rate SLIs
+          - record: sli:http_error_rate:rate5m
+            expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])
+            
+          - record: sli:message_delivery_error_rate:rate5m
+            expr: rate(message_delivery_failures_total[5m]) / rate(message_delivery_attempts_total[5m])
+            
+          # Capacity SLIs
+          - record: sli:cpu_utilization:rate5m
+            expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+            
+          - record: sli:memory_utilization:rate5m
+            expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100
+            
+          # Emergency Communication SLIs
+          - record: sli:emergency_response_time:p90:rate5m
+            expr: histogram_quantile(0.90, rate(emergency_response_time_seconds_bucket[5m]))
+            
+          - record: sli:p2p_peer_connectivity:rate5m
+            expr: sum(p2p_peer_count) / sum(p2p_expected_peers)
+
+  # Error Budget Calculation
+  error-budget-config.yaml: |
+    error_budgets:
+      # 30-day error budgets
+      p2p_network_availability:
+        slo_target: 0.9999  # 99.99% availability
+        measurement_period: "30d"
+        total_budget_minutes: 4.38  # (1 - 0.9999) * 30 * 24 * 60
+        
+      edge_gateway_availability:
+        slo_target: 0.999   # 99.9% availability
+        measurement_period: "30d"
+        total_budget_minutes: 43.8  # (1 - 0.999) * 30 * 24 * 60
+        
+      http_error_rate:
+        slo_target: 0.999   # 99.9% success rate
+        measurement_period: "30d"
+        total_budget_requests: "0.1%"  # 0.1% of total requests
+        
+      message_delivery_rate:
+        slo_target: 0.9999  # 99.99% delivery rate
+        measurement_period: "30d"
+        total_budget_messages: "0.01%" # 0.01% of total messages
+
+---
+# Deployment Configuration
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grahmos-sla-slo-monitor
+  namespace: monitoring
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: grahmos-sla-slo-monitor
+  template:
+    metadata:
+      labels:
+        app: grahmos-sla-slo-monitor
+    spec:
+      containers:
+      - name: slo-exporter
+        image: grahmos/slo-exporter:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: CONFIG_PATH
+          value: "/etc/config"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+      volumes:
+      - name: config
+        configMap:
+          name: grahmos-sla-slo-config
+
+---
+# Service Configuration
+apiVersion: v1
+kind: Service
+metadata:
+  name: grahmos-sla-slo-monitor
+  namespace: monitoring
+spec:
+  selector:
+    app: grahmos-sla-slo-monitor
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP

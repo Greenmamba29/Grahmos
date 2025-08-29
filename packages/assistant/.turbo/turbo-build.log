@@ -1,0 +1,23 @@
+
+
+> @packages/assistant@2.0.0 build /Users/paco/Downloads/Grahmos/packages/assistant
+> tsc -p .
+
+[96msrc/llm.ts[0m:[93m1[0m:[93m19[0m - [91merror[0m[90m TS2307: [0mCannot find module 'node-fetch' or its corresponding type declarations.
+
+[7m1[0m import fetch from 'node-fetch';
+[7m [0m [91m                  ~~~~~~~~~~~~[0m
+
+[96msrc/tts.ts[0m:[93m2[0m:[93m19[0m - [91merror[0m[90m TS2307: [0mCannot find module 'node-fetch' or its corresponding type declarations.
+
+[7m2[0m import fetch from 'node-fetch';
+[7m [0m [91m                  ~~~~~~~~~~~~[0m
+
+
+Found 2 errors in 2 files.
+
+Errors  Files
+     1  src/llm.ts[90m:1[0m
+     1  src/tts.ts[90m:2[0m
+[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 2.[39m
+[43m[30m WARN [39m[49m  Local package.json exists, but node_modules missing, did you mean to install?

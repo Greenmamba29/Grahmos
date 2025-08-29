@@ -1,0 +1,422 @@
+name: Desktop Release - Auto-Update & Code Signing
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+    paths: ['installer/**', 'apps/pwa-shell/**', 'packages/**']
+  workflow_dispatch:
+    inputs:
+      release_channel:
+        description: 'Release channel'
+        required: true
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - beta
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      force_rebuild:
+        description: 'Force rebuild all platforms'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  GRAHMOS_VERSION: 2.0.0
+  NODE_VERSION: '20'
+  ELECTRON_CACHE: ~/.cache/electron
+  ELECTRON_BUILDER_CACHE: ~/.cache/electron-builder
+
+jobs:
+  # Build matrix for desktop installers
+  build-desktop:
+    name: Build Desktop - ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows builds
+          - platform: windows
+            os: windows-latest
+            arch: x64
+          - platform: windows
+            os: windows-latest
+            arch: arm64
+          
+          # macOS builds
+          - platform: macos
+            os: macos-latest
+            arch: x64
+          - platform: macos
+            os: macos-latest
+            arch: arm64
+          
+          # Linux builds
+          - platform: linux
+            os: ubuntu-latest
+            arch: x64
+          - platform: linux
+            os: ubuntu-latest
+            arch: arm64
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Setup PNPM (for workspace dependencies)
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          run_install: false
+      
+      - name: Cache Electron
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ELECTRON_CACHE }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('installer/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+      
+      - name: Cache Electron Builder
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ELECTRON_BUILDER_CACHE }}
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('installer/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+      
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Build PWA shell
+        run: |
+          cd apps/pwa-shell
+          pnpm run build
+      
+      - name: Build assistant package
+        run: |
+          cd packages/assistant
+          pnpm run build
+      
+      - name: Install installer dependencies
+        working-directory: installer
+        run: npm install
+      
+      # Platform-specific setup
+      - name: Setup Windows signing (Windows only)
+        if: matrix.platform == 'windows' && env.WINDOWS_CERT_P12 != ''
+        run: |
+          # Import code signing certificate
+          $bytes = [Convert]::FromBase64String("$env:WINDOWS_CERT_P12")
+          [IO.File]::WriteAllBytes("cert.p12", $bytes)
+          echo "CSC_LINK=cert.p12" >> $env:GITHUB_ENV
+          echo "CSC_KEY_PASSWORD=$env:WINDOWS_CERT_PASSWORD" >> $env:GITHUB_ENV
+        env:
+          WINDOWS_CERT_P12: ${{ secrets.WINDOWS_CERT_P12 }}
+          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+        shell: pwsh
+      
+      - name: Setup macOS signing (macOS only)
+        if: matrix.platform == 'macos' && env.APPLE_CERT_P12 != ''
+        run: |
+          # Import Apple certificates
+          echo $APPLE_CERT_P12 | base64 --decode > cert.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import cert.p12 -k build.keychain -P "$APPLE_CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          
+          echo "CSC_LINK=cert.p12" >> $GITHUB_ENV
+          echo "CSC_KEY_PASSWORD=$APPLE_CERT_PASSWORD" >> $GITHUB_ENV
+        env:
+          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      
+      - name: Setup Linux dependencies (Linux only)
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libnss3-dev libatk-bridge2.0-dev libdrm2-dev libxcomposite-dev libxdamage-dev libxrandr-dev libgbm-dev libxss1-dev libasound2-dev
+      
+      - name: Set release channel
+        run: |
+          if [ "${{ github.event.inputs.release_channel }}" != "" ]; then
+            echo "GRAHMOS_RELEASE_CHANNEL=${{ github.event.inputs.release_channel }}" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "GRAHMOS_RELEASE_CHANNEL=latest" >> $GITHUB_ENV
+          else
+            echo "GRAHMOS_RELEASE_CHANNEL=beta" >> $GITHUB_ENV
+          fi
+        shell: bash
+      
+      - name: Build desktop installer
+        working-directory: installer
+        run: |
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            if [ "${{ matrix.arch }}" = "x64" ]; then
+              npm run build:windows
+            else
+              npm run build:windows -- --arm64
+            fi
+          elif [ "${{ matrix.platform }}" = "macos" ]; then
+            if [ "${{ matrix.arch }}" = "x64" ]; then
+              npm run build:macos -- --x64
+            else
+              npm run build:macos -- --arm64
+            fi
+          else
+            if [ "${{ matrix.arch }}" = "x64" ]; then
+              npm run build:linux
+            else
+              npm run build:linux -- --arm64
+            fi
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        shell: bash
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: grahmos-desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            installer/build/*.exe
+            installer/build/*.msi
+            installer/build/*.dmg
+            installer/build/*.zip
+            installer/build/*.AppImage
+            installer/build/*.deb
+            installer/build/*.rpm
+            installer/build/*.snap
+            installer/build/*.tar.gz
+          if-no-files-found: ignore
+          retention-days: 30
+      
+      - name: Generate checksums
+        if: matrix.platform == 'linux' || matrix.platform == 'windows'
+        working-directory: installer/build
+        run: |
+          for file in *; do
+            if [ -f "$file" ]; then
+              sha256sum "$file" > "$file.sha256"
+            fi
+          done
+        shell: bash
+      
+      - name: Generate checksums (macOS)
+        if: matrix.platform == 'macos'
+        working-directory: installer/build
+        run: |
+          for file in *; do
+            if [ -f "$file" ]; then
+              shasum -a 256 "$file" > "$file.sha256"
+            fi
+          done
+        shell: bash
+      
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: checksums-${{ matrix.platform }}-${{ matrix.arch }}
+          path: installer/build/*.sha256
+          if-no-files-found: ignore
+
+  # Create GitHub release
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-desktop
+    if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.release_channel != ''
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_id: ${{ steps.create_release.outputs.id }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+      
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find release-artifacts -type f \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" -o -name "*.snap" -o -name "*.sha256" \) -exec cp {} release-assets/ \;
+          
+          # List what we have
+          echo "Release assets:"
+          ls -la release-assets/
+      
+      - name: Generate auto-update manifests
+        run: |
+          export RELEASE_BASE_URL="https://github.com/grahmos/desktop/releases/download"
+          node scripts/generate-update-manifest.js ${{ env.GRAHMOS_VERSION }} release-assets
+          
+          # Copy manifests to release assets
+          cp *.yml release-assets/ 2>/dev/null || true
+          
+          echo "Generated manifests:"
+          ls -la *.yml 2>/dev/null || echo "No manifest files found"
+      
+      - name: Generate changelog
+        id: changelog
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            # Extract changelog for current version
+            version="${GITHUB_REF#refs/tags/}"
+            changelog=$(sed -n "/^## \[${version#v}\]/,/^## \[/p" CHANGELOG.md | head -n -1)
+            {
+              echo 'CHANGELOG<<EOF'
+              echo "$changelog"
+              echo 'EOF'
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "CHANGELOG=Automated release from CI/CD" >> "$GITHUB_OUTPUT"
+          fi
+      
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name || format('v{0}', env.GRAHMOS_VERSION) }}
+          name: Grahmos Desktop ${{ github.ref_name || env.GRAHMOS_VERSION }}
+          body: |
+            # Grahmos Desktop Release
+            
+            ## What's New
+            ${{ steps.changelog.outputs.CHANGELOG || 'Automated release with latest updates and improvements.' }}
+            
+            ## Installation
+            
+            ### Windows
+            - **Recommended**: Download and run `Grahmos-Setup-*.exe` (NSIS installer)
+            - **Alternative**: Download `Grahmos-*.msi` (MSI installer)
+            - **Portable**: Download `Grahmos-*-win.exe` (portable version)
+            
+            ### macOS
+            - **Recommended**: Download `Grahmos-*.dmg` and drag to Applications folder
+            - **Alternative**: Download `Grahmos-*-mac.zip` and extract
+            
+            ### Linux
+            - **AppImage**: Download `Grahmos-*.AppImage`, make executable, and run
+            - **Debian/Ubuntu**: Download and install `grahmos_*.deb`
+            - **RHEL/CentOS**: Download and install `grahmos-*.rpm`
+            - **Snap**: `snap install grahmos`
+            
+            ## Verification
+            All releases are signed and include SHA256 checksums. Verify downloads:
+            ```bash
+            sha256sum -c Grahmos-*.sha256
+            ```
+            
+            ## Auto-Updates
+            This version supports automatic updates. The application will notify you when updates are available.
+            
+            **Release Channel**: ${{ env.GRAHMOS_RELEASE_CHANNEL || 'latest' }}
+          files: release-assets/*
+          draft: false
+          prerelease: ${{ env.GRAHMOS_RELEASE_CHANNEL == 'beta' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Update release server
+  update-release-server:
+    name: Update Release Server
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: success() && secrets.RELEASE_SERVER_WEBHOOK_URL != ''
+    
+    steps:
+      - name: Trigger release server update
+        run: |
+          curl -X POST "${{ secrets.RELEASE_SERVER_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RELEASE_SERVER_TOKEN }}" \
+            -d '{
+              "version": "${{ env.GRAHMOS_VERSION }}",
+              "channel": "${{ env.GRAHMOS_RELEASE_CHANNEL }}",
+              "tag": "${{ github.ref_name }}",
+              "release_id": "${{ needs.create-release.outputs.release_id }}"
+            }' || echo "Release server update failed, continuing..."
+
+  # Notify deployment
+  notify-completion:
+    name: Notify Release Completion
+    runs-on: ubuntu-latest
+    needs: [build-desktop, create-release, update-release-server]
+    if: always()
+    
+    steps:
+      - name: Determine status
+        id: status
+        run: |
+          if [[ "${{ needs.build-desktop.result }}" == "success" && "${{ needs.create-release.result }}" == "success" ]]; then
+            echo "status=success" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=failure" >> "$GITHUB_OUTPUT"
+          fi
+      
+      - name: Notify Slack
+        if: secrets.SLACK_WEBHOOK_URL != ''
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ steps.status.outputs.status }}
+          channel: '#releases'
+          text: |
+            🚀 Grahmos Desktop Release Pipeline
+            
+            📦 Version: ${{ env.GRAHMOS_VERSION }}
+            🏷️  Tag: ${{ github.ref_name || 'manual' }}
+            📊 Status: ${{ steps.status.outputs.status }}
+            🌟 Channel: ${{ env.GRAHMOS_RELEASE_CHANNEL || 'latest' }}
+            
+            Platform Support:
+            • ✅ Windows (x64, arm64)
+            • ✅ macOS (Intel, Apple Silicon) 
+            • ✅ Linux (AppImage, DEB, RPM, Snap)
+            
+            Auto-update enabled for all platforms.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: Summary
+        run: |
+          echo "## 🚀 Desktop Release Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Version**: ${{ env.GRAHMOS_VERSION }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Channel**: ${{ env.GRAHMOS_RELEASE_CHANNEL || 'latest' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Status**: ${{ steps.status.outputs.status }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Build Results**:" >> "$GITHUB_STEP_SUMMARY"
+          echo "  - Desktop Build: ${{ needs.build-desktop.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "  - Release Creation: ${{ needs.create-release.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "  - Server Update: ${{ needs.update-release-server.result }}" >> "$GITHUB_STEP_SUMMARY"

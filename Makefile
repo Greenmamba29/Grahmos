@@ -191,6 +191,16 @@ test-integration: ## Run integration tests
 		exit 1; \
 	fi
 
+smoke: ## Run smoke tests
+	@echo -e "$(Y)> Running smoke tests$(N)"
+	bash scripts/smoke.sh
+	@echo -e "$(G)✅ Smoke tests completed$(N)"
+
+qa: ## Run comprehensive QA test suite
+	@echo -e "$(Y)> Running QA test suite$(N)"
+	bash scripts/qa.sh
+	@echo -e "$(G)✅ QA tests completed$(N)"
+
 # Quality targets
 lint: ## Run linters
 	@echo -e "$(Y)> Running linters$(N)"

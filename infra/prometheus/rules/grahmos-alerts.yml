@@ -1,0 +1,356 @@
+# Grahmos Prometheus Alerting Rules
+# Phase 10: Advanced Monitoring - Intelligent Alerting System
+
+groups:
+  # Application Health Alerts
+  - name: grahmos.application.health
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minute."
+          runbook_url: "https://runbooks.grahmos.dev/service-down"
+          action: "Check service logs and restart if necessary"
+
+      - alert: HighErrorRate
+        expr: sum(rate(grahmos_errors_total[5m])) by (service) / sum(rate(grahmos_page_views_total[5m])) by (service) > 0.05
+        for: 2m
+        labels:
+          severity: high
+          category: reliability
+        annotations:
+          summary: "High error rate detected in {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for service {{ $labels.service }}"
+          runbook_url: "https://runbooks.grahmos.dev/high-error-rate"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, sum(rate(grahmos_operation_duration_bucket[5m])) by (le, service)) > 2000
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High response time in {{ $labels.service }}"
+          description: "95th percentile response time is {{ $value }}ms for {{ $labels.service }}"
+          threshold: "2000ms"
+          value: "{{ $value }}ms"
+
+  # PWA Specific Alerts
+  - name: grahmos.pwa.health
+    interval: 30s
+    rules:
+      - alert: PWAHighLoadTime
+        expr: avg(grahmos_core_web_vitals_total{metric="lcp"}) > 2500
+        for: 3m
+        labels:
+          severity: warning
+          service: grahmos-pwa
+          category: performance
+        annotations:
+          summary: "PWA loading performance degraded"
+          description: "Largest Contentful Paint is {{ $value }}ms, above the 2.5s threshold"
+          value: "{{ $value }}ms"
+          threshold: "2500ms"
+
+      - alert: PWAHighLayoutShift
+        expr: avg(grahmos_core_web_vitals_total{metric="cls"}) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: grahmos-pwa
+          category: performance
+        annotations:
+          summary: "PWA layout stability issues detected"
+          description: "Cumulative Layout Shift is {{ $value }}, above the 0.1 threshold"
+          value: "{{ $value }}"
+          threshold: "0.1"
+
+      - alert: PWALowEngagement
+        expr: avg(grahmos_user_engagement_total{engagement_session_duration!=""}) < 30000
+        for: 10m
+        labels:
+          severity: warning
+          service: grahmos-pwa
+          category: business
+        annotations:
+          summary: "Low user engagement detected"
+          description: "Average session duration is {{ $value | humanizeDuration }}, below normal levels"
+          value: "{{ $value | humanizeDuration }}"
+
+      - alert: PWAServiceWorkerFailed
+        expr: increase(grahmos_errors_total{error_context="service_worker"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: high
+          service: grahmos-pwa
+          category: reliability
+        annotations:
+          summary: "PWA Service Worker failures"
+          description: "{{ $value }} service worker errors in the last 5 minutes"
+
+  # AI Assistant Alerts
+  - name: grahmos.assistant.health
+    interval: 30s
+    rules:
+      - alert: AssistantHighLatency
+        expr: histogram_quantile(0.95, sum(rate(assistant_llm_response_duration_bucket[5m])) by (le, llm_model)) > 30000
+        for: 3m
+        labels:
+          severity: high
+          service: grahmos-assistant
+          category: performance
+        annotations:
+          summary: "AI Assistant high latency for {{ $labels.llm_model }}"
+          description: "95th percentile response time is {{ $value }}ms for model {{ $labels.llm_model }}"
+          value: "{{ $value }}ms"
+          threshold: "30000ms"
+
+      - alert: AssistantLowSuccessRate
+        expr: sum(rate(assistant_llm_requests_total{llm_success="false"}[5m])) by (llm_model) / sum(rate(assistant_llm_requests_total[5m])) by (llm_model) > 0.1
+        for: 5m
+        labels:
+          severity: high
+          service: grahmos-assistant
+          category: reliability
+        annotations:
+          summary: "AI Assistant low success rate for {{ $labels.llm_model }}"
+          description: "Success rate is {{ $value | humanizePercentage }} for model {{ $labels.llm_model }}"
+          value: "{{ $value | humanizePercentage }}"
+
+      - alert: AssistantNoSessions
+        expr: sum(assistant_active_sessions) == 0
+        for: 15m
+        labels:
+          severity: warning
+          service: grahmos-assistant
+          category: business
+        annotations:
+          summary: "No active AI Assistant sessions"
+          description: "No active assistant sessions for 15 minutes, possible service issue or low usage"
+
+      - alert: AssistantTTSFailures
+        expr: sum(rate(assistant_tts_requests_total{tts_success="false"}[10m])) > 5
+        for: 2m
+        labels:
+          severity: warning
+          service: grahmos-assistant
+          category: reliability
+        annotations:
+          summary: "AI Assistant TTS failures"
+          description: "{{ $value }} TTS failures in the last 10 minutes"
+
+  # Search Performance Alerts
+  - name: grahmos.search.performance
+    interval: 30s
+    rules:
+      - alert: SearchHighLatency
+        expr: histogram_quantile(0.95, sum(rate(grahmos_operation_duration_bucket{operation="search"}[5m])) by (le)) > 1000
+        for: 3m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Search performance degraded"
+          description: "95th percentile search time is {{ $value }}ms"
+          value: "{{ $value }}ms"
+          threshold: "1000ms"
+
+      - alert: SearchLowResultRate
+        expr: sum(rate(grahmos_searches_total{search_has_results="false"}[10m])) / sum(rate(grahmos_searches_total[10m])) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "High rate of searches with no results"
+          description: "{{ $value | humanizePercentage }} of searches return no results"
+          value: "{{ $value | humanizePercentage }}"
+
+      - alert: SearchVolumeSpike
+        expr: sum(rate(grahmos_searches_total[5m])) > sum(rate(grahmos_searches_total[5m] offset 1h)) * 3
+        for: 2m
+        labels:
+          severity: info
+          category: business
+        annotations:
+          summary: "Search volume spike detected"
+          description: "Search volume is {{ $value }}x higher than 1 hour ago"
+
+  # Security Alerts
+  - name: grahmos.security
+    interval: 30s
+    rules:
+      - alert: HighFailedAuthRate
+        expr: sum(rate(grahmos_errors_total{error_context="authentication"}[5m])) > 10
+        for: 2m
+        labels:
+          severity: high
+          category: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "{{ $value }} authentication failures per second"
+          action: "Check for brute force attacks"
+
+      - alert: SuspiciousUserBehavior
+        expr: sum(rate(grahmos_user_engagement_total{engagement_clicks!=""}[5m])) by (user_session_id) > 100
+        for: 1m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Suspicious user behavior detected"
+          description: "User session {{ $labels.user_session_id }} has unusually high click rate"
+          action: "Review user activity logs"
+
+      - alert: UnauthorizedAPIAccess
+        expr: sum(rate(grahmos_errors_total{error_type="Unauthorized"}[5m])) > 5
+        for: 3m
+        labels:
+          severity: high
+          category: security
+        annotations:
+          summary: "High rate of unauthorized API access attempts"
+          description: "{{ $value }} unauthorized access attempts per second"
+
+  # Infrastructure Alerts  
+  - name: grahmos.infrastructure
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+          value: "{{ $value }}%"
+          threshold: "85%"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+          value: "{{ $value }}%"
+          threshold: "80%"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value | humanizePercentage }} on {{ $labels.mountpoint }}"
+          value: "{{ $value }}%"
+          threshold: "85%"
+
+      - alert: ContainerRestartLoop
+        expr: rate(container_last_seen[5m]) > 0
+        for: 2m
+        labels:
+          severity: high
+          category: reliability
+        annotations:
+          summary: "Container {{ $labels.name }} restarting frequently"
+          description: "Container has restarted {{ $value }} times in the last 5 minutes"
+
+  # Business Metrics Alerts
+  - name: grahmos.business
+    interval: 60s
+    rules:
+      - alert: LowDailyActiveUsers
+        expr: count(increase(grahmos_page_views_total[24h]) > 0) < 100
+        for: 2h
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "Low daily active users"
+          description: "Only {{ $value }} active users in the last 24 hours"
+          value: "{{ $value }}"
+
+      - alert: FeatureAdoptionLow
+        expr: sum(increase(grahmos_feature_usage_total[24h])) by (feature_name) < 10
+        for: 6h
+        labels:
+          severity: info
+          category: business
+        annotations:
+          summary: "Low adoption for feature {{ $labels.feature_name }}"
+          description: "Feature {{ $labels.feature_name }} used only {{ $value }} times in 24h"
+          value: "{{ $value }}"
+
+      - alert: AssistantUsageDrop
+        expr: sum(rate(grahmos_assistant_interactions_total[1h])) < sum(rate(grahmos_assistant_interactions_total[1h] offset 24h)) * 0.5
+        for: 2h
+        labels:
+          severity: warning
+          category: business
+        annotations:
+          summary: "AI Assistant usage dropped significantly"
+          description: "Assistant usage is 50% lower than 24 hours ago"
+
+  # Auto-Update System Alerts
+  - name: grahmos.autoupdate
+    interval: 60s
+    rules:
+      - alert: UpdateServerDown
+        expr: up{job="update-server"} == 0
+        for: 2m
+        labels:
+          severity: high
+          category: availability
+        annotations:
+          summary: "Auto-update server is down"
+          description: "Update server has been down for more than 2 minutes"
+          runbook_url: "https://runbooks.grahmos.dev/update-server-down"
+
+      - alert: HighUpdateFailureRate
+        expr: sum(rate(grahmos_update_failures_total[1h])) / sum(rate(grahmos_update_attempts_total[1h])) > 0.1
+        for: 30m
+        labels:
+          severity: warning
+          category: reliability
+        annotations:
+          summary: "High auto-update failure rate"
+          description: "{{ $value | humanizePercentage }} of update attempts are failing"
+          value: "{{ $value | humanizePercentage }}"
+
+  # Data Quality Alerts
+  - name: grahmos.data.quality
+    interval: 60s
+    rules:
+      - alert: MissingMetrics
+        expr: absent(grahmos_page_views_total) or absent(grahmos_searches_total) or absent(assistant_llm_requests_total)
+        for: 5m
+        labels:
+          severity: high
+          category: monitoring
+        annotations:
+          summary: "Critical metrics missing"
+          description: "One or more critical metrics are not being collected"
+          action: "Check telemetry instrumentation"
+
+      - alert: StaleMetrics
+        expr: time() - grahmos_page_views_total > 300
+        for: 5m
+        labels:
+          severity: warning
+          category: monitoring
+        annotations:
+          summary: "Metrics appear stale"
+          description: "Page view metrics haven't updated in over 5 minutes"

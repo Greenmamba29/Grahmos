@@ -1,0 +1,47 @@
+[Desktop Entry]
+Name=GrahmOS
+GenericName=Decentralized Operating System
+Comment=AI-powered, P2P-native, decentralized operating system with integrated search and mapping
+Exec=/opt/grahmos/grahmos %u
+Icon=grahmos
+Type=Application
+Categories=Network;WebBrowser;Office;
+Terminal=false
+NoDisplay=false
+StartupNotify=true
+StartupWMClass=GrahmOS
+
+# Protocol Handler Registration
+MimeType=x-scheme-handler/grahmos;
+
+# Additional metadata
+Version=1.0.0
+Keywords=emergency;search;mapping;p2p;decentralized;offline;
+
+# Internationalization
+Name[en_US]=GrahmOS
+Comment[en_US]=AI-powered, P2P-native, decentralized operating system with integrated search and mapping
+GenericName[en_US]=Decentralized Operating System
+
+# Actions for context menu
+Actions=search;emergency;mapping;network;
+
+[Desktop Action search]
+Name=Search & Documentation
+Exec=/opt/grahmos/grahmos grahmos://search
+Icon=search
+
+[Desktop Action emergency]
+Name=Emergency Response
+Exec=/opt/grahmos/grahmos grahmos://emergency
+Icon=security-high
+
+[Desktop Action mapping]
+Name=Emergency Mapping
+Exec=/opt/grahmos/grahmos grahmos://mapping
+Icon=applications-graphics
+
+[Desktop Action network]
+Name=P2P Network
+Exec=/opt/grahmos/grahmos grahmos://network
+Icon=network-workgroup

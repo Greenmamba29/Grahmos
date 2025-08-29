@@ -1,0 +1,446 @@
+{
+  "mdm_profile": {
+    "name": "Grahmos Emergency Response MDM Profile",
+    "identifier": "io.grahmos.mdm.emergency-response",
+    "version": "1.0",
+    "description": "MDM profile for Grahmos emergency communication devices deployed in stadiums, shelters, and emergency response scenarios",
+    "organization": "Grahmos Emergency Communications",
+    "contact_email": "support@grahmos.io",
+    "support_url": "https://support.grahmos.io/mdm"
+  },
+  
+  "device_configuration": {
+    "supervision": {
+      "required": true,
+      "allow_user_to_remove_supervision": false,
+      "description": "Devices must be supervised for security and management in emergency scenarios"
+    },
+    
+    "device_owner_mode": {
+      "android": {
+        "enabled": true,
+        "provisioning_method": "nfc",
+        "admin_component": "io.grahmos.emergency/.EmergencyDeviceAdminReceiver",
+        "admin_extras": {
+          "deployment_type": "emergency_response",
+          "managed_by": "grahmos_mdm_system",
+          "emergency_mode_enabled": true
+        }
+      },
+      "ios": {
+        "supervised": true,
+        "dep_enrolled": true,
+        "activation_lock_allowed": false,
+        "automatic_app_installation": true
+      }
+    },
+    
+    "kiosk_mode": {
+      "enabled": true,
+      "single_app_mode": false,
+      "allowed_applications": [
+        "io.grahmos.emergency",
+        "com.apple.Preferences",
+        "com.android.settings"
+      ],
+      "home_screen_layout": {
+        "dock_items": ["io.grahmos.emergency"],
+        "pages": [{
+          "apps": ["io.grahmos.emergency"]
+        }]
+      }
+    },
+    
+    "restrictions": {
+      "allow_app_installation": false,
+      "allow_app_removal": false,
+      "allow_camera": true,
+      "allow_microphone": true,
+      "allow_location_services": true,
+      "allow_bluetooth": true,
+      "allow_wifi_modification": false,
+      "allow_cellular_data": true,
+      "allow_personal_hotspot": false,
+      "allow_screenshots": true,
+      "allow_screen_recording": false,
+      "allow_airplane_mode": false,
+      "allow_device_lock": true,
+      "allow_passcode_modification": false,
+      "force_encrypted_backup": true,
+      "allow_cloud_backup": false,
+      "allow_cloud_sync": false,
+      "allow_siri": false,
+      "allow_voice_dialing": false,
+      "allow_assistant_while_locked": false
+    },
+    
+    "security_policy": {
+      "passcode_required": true,
+      "passcode_policy": {
+        "min_length": 6,
+        "require_alphanumeric": false,
+        "require_complex": false,
+        "max_failed_attempts": 10,
+        "max_inactivity": 300,
+        "max_passcode_age_days": 90,
+        "passcode_history": 5,
+        "auto_lock_timeout": 120,
+        "grace_period": 0
+      },
+      
+      "encryption": {
+        "require_device_encryption": true,
+        "require_sd_card_encryption": true,
+        "allow_simple_passcode": false
+      },
+      
+      "biometrics": {
+        "allow_fingerprint": true,
+        "allow_face_unlock": true,
+        "fallback_to_passcode": true
+      },
+      
+      "remote_management": {
+        "allow_remote_wipe": true,
+        "allow_remote_lock": true,
+        "allow_location_tracking": true,
+        "emergency_wipe_enabled": true
+      }
+    }
+  },
+  
+  "network_configuration": {
+    "wifi_profiles": [
+      {
+        "ssid": "Grahmos-Emergency-Secure",
+        "security_type": "WPA2-Enterprise",
+        "hidden_network": false,
+        "auto_join": true,
+        "proxy_type": "None",
+        "eap_configuration": {
+          "accepted_eap_types": ["PEAP", "TLS"],
+          "username": "grahmos-device",
+          "password": "${WIFI_DEVICE_PASSWORD}",
+          "ttls_inner_authentication": "MSCHAPv2",
+          "outer_identity": "grahmos-emergency"
+        }
+      },
+      {
+        "ssid": "Grahmos-Emergency-Open",
+        "security_type": "None",
+        "hidden_network": false,
+        "auto_join": true,
+        "captive_bypass": true,
+        "description": "Open emergency network for initial connectivity"
+      }
+    ],
+    
+    "cellular_configuration": {
+      "allow_data_roaming": false,
+      "allow_voice_roaming": false,
+      "allow_personal_hotspot": false,
+      "carrier_settings_version": "latest",
+      "apn_configurations": [
+        {
+          "name": "Grahmos Emergency APN",
+          "apn": "grahmos.emergency.apn",
+          "username": "grahmos",
+          "password": "${APN_PASSWORD}",
+          "proxy_host": "",
+          "proxy_port": "",
+          "authentication_type": "PAP"
+        }
+      ]
+    },
+    
+    "vpn_configuration": {
+      "enabled": false,
+      "connection_type": "IKEv2",
+      "server_address": "vpn.grahmos.io",
+      "remote_identifier": "grahmos-emergency-vpn",
+      "local_identifier": "emergency-device",
+      "authentication_method": "Certificate",
+      "certificate_type": "RSA",
+      "on_demand_enabled": false,
+      "per_app_vpn": []
+    }
+  },
+  
+  "application_management": {
+    "required_applications": [
+      {
+        "bundle_id": "io.grahmos.emergency",
+        "name": "Grahmos Emergency",
+        "version": "latest",
+        "installation_required": true,
+        "removal_disallowed": true,
+        "data_backup_allowed": false,
+        "managed_configuration": {
+          "emergency_mode": true,
+          "offline_content_enabled": true,
+          "p2p_networking_enabled": true,
+          "automatic_updates": true,
+          "telemetry_enabled": true,
+          "crash_reporting_enabled": true
+        }
+      }
+    ],
+    
+    "permitted_applications": [
+      "io.grahmos.emergency",
+      "com.apple.Preferences",
+      "com.apple.mobilephone",
+      "com.apple.mobilesafari",
+      "com.apple.camera",
+      "com.apple.Health",
+      "com.apple.Maps"
+    ],
+    
+    "prohibited_applications": [
+      "com.facebook.Facebook",
+      "com.twitter.twitter",
+      "com.instagram.app",
+      "com.snapchat.snapchat",
+      "com.tencent.wechat",
+      "com.whatsapp.WhatsApp"
+    ],
+    
+    "app_installation_policy": {
+      "allow_app_store": false,
+      "allow_third_party_apps": false,
+      "require_admin_approval": true,
+      "auto_install_required_apps": true,
+      "auto_update_apps": true
+    }
+  },
+  
+  "monitoring_and_compliance": {
+    "device_information_queries": [
+      "DeviceName",
+      "OSVersion",
+      "BuildVersion",
+      "ModelName",
+      "SerialNumber",
+      "UDID",
+      "IMEI",
+      "MEID",
+      "WiFiMAC",
+      "BluetoothMAC",
+      "CarrierSettingsVersion",
+      "PhoneNumber",
+      "VoiceRoamingEnabled",
+      "DataRoamingEnabled",
+      "BatteryLevel",
+      "CellularTechnology",
+      "IsSupervised",
+      "IsMultiUser",
+      "IsDeviceLocatorServiceEnabled",
+      "IsActivationLockEnabled",
+      "IsCloudBackupEnabled"
+    ],
+    
+    "installed_application_list": {
+      "managed_apps_only": false,
+      "include_app_data": true
+    },
+    
+    "security_info": {
+      "hardware_encryption_caps": true,
+      "passcode_present": true,
+      "passcode_compliant": true,
+      "passcode_compliant_with_profiles": true,
+      "fde_enabled": true,
+      "firewall_enabled": true,
+      "system_integrity_protection_enabled": true
+    },
+    
+    "compliance_rules": [
+      {
+        "name": "Passcode Required",
+        "rule": "device.passcode_present == true",
+        "action": "notify_admin",
+        "severity": "high"
+      },
+      {
+        "name": "Encryption Required", 
+        "rule": "device.fde_enabled == true",
+        "action": "remote_lock",
+        "severity": "critical"
+      },
+      {
+        "name": "Grahmos App Installed",
+        "rule": "apps.contains('io.grahmos.emergency')",
+        "action": "install_app",
+        "severity": "medium"
+      },
+      {
+        "name": "Prohibited App Detected",
+        "rule": "apps.intersects(prohibited_apps)",
+        "action": "remove_app",
+        "severity": "medium"
+      }
+    ],
+    
+    "reporting": {
+      "compliance_report_frequency": "daily",
+      "device_status_frequency": "hourly", 
+      "app_inventory_frequency": "weekly",
+      "security_events_frequency": "realtime"
+    }
+  },
+  
+  "emergency_procedures": {
+    "emergency_contacts": [
+      {
+        "name": "Emergency Operations Center",
+        "phone": "+1-800-GRAHMOS",
+        "email": "emergency@grahmos.io",
+        "role": "primary"
+      },
+      {
+        "name": "Technical Support",
+        "phone": "+1-855-SUPPORT",
+        "email": "support@grahmos.io",
+        "role": "technical"
+      }
+    ],
+    
+    "emergency_actions": {
+      "lost_or_stolen_device": {
+        "immediate_actions": [
+          "remote_lock",
+          "display_lost_message",
+          "enable_location_tracking"
+        ],
+        "escalation_actions": [
+          "remote_wipe_after_72h",
+          "notify_security_team"
+        ]
+      },
+      
+      "security_breach": {
+        "immediate_actions": [
+          "isolate_device",
+          "collect_security_logs",
+          "notify_admin"
+        ],
+        "escalation_actions": [
+          "remote_wipe",
+          "revoke_certificates"
+        ]
+      },
+      
+      "natural_disaster": {
+        "immediate_actions": [
+          "enable_emergency_mode",
+          "prioritize_emergency_communications",
+          "disable_non_essential_services"
+        ]
+      }
+    },
+    
+    "disaster_recovery": {
+      "backup_frequency": "daily",
+      "backup_location": "encrypted_cloud_storage",
+      "recovery_time_objective": "4_hours",
+      "recovery_point_objective": "1_hour",
+      "failover_procedures": [
+        "activate_backup_mdm_server",
+        "redirect_device_communications", 
+        "restore_device_configurations"
+      ]
+    }
+  },
+  
+  "deployment_instructions": {
+    "android_deployment": {
+      "method": "nfc_provisioning",
+      "steps": [
+        "Factory reset device",
+        "During setup, tap NFC tag with provisioning data",
+        "Device automatically configures as device owner",
+        "Grahmos app installs and configures automatically",
+        "Device enters supervised mode"
+      ],
+      "nfc_provisioning_data": {
+        "android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": "io.grahmos.emergency/.EmergencyDeviceAdminReceiver",
+        "android.app.extra.PROVISIONING_DEVICE_ADMIN_SIGNATURE_CHECKSUM": "${APP_SIGNATURE_HASH}",
+        "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION": "https://deploy.grahmos.io/android/emergency.apk",
+        "android.app.extra.PROVISIONING_ADMIN_EXTRAS_BUNDLE": {
+          "deployment_type": "emergency",
+          "mdm_server": "https://mdm.grahmos.io",
+          "enrollment_token": "${ENROLLMENT_TOKEN}"
+        }
+      }
+    },
+    
+    "ios_deployment": {
+      "method": "dep_enrollment",
+      "steps": [
+        "Device must be DEP enrolled",
+        "User starts device setup",
+        "Device automatically enrolls in MDM during setup",
+        "Profile and apps install automatically",
+        "Device enters supervised mode"
+      ],
+      "dep_configuration": {
+        "skip_setup_items": [
+          "Biometric",
+          "Payment",
+          "Zoom",
+          "Restore",
+          "SIMSetup",
+          "Android",
+          "AppleID",
+          "TermsOfAddress",
+          "TOS"
+        ],
+        "is_supervised": true,
+        "is_multi_user": false,
+        "await_device_configured": true
+      }
+    }
+  },
+  
+  "testing_and_validation": {
+    "test_scenarios": [
+      {
+        "name": "Emergency Activation",
+        "description": "Verify device can activate emergency mode",
+        "steps": [
+          "Trigger emergency activation",
+          "Verify P2P networking enables",
+          "Verify offline content accessible",
+          "Verify emergency contacts accessible"
+        ]
+      },
+      {
+        "name": "Network Isolation",
+        "description": "Verify device operates without internet",
+        "steps": [
+          "Disconnect from internet",
+          "Verify app continues functioning",
+          "Verify P2P mesh networking",
+          "Verify offline content distribution"
+        ]
+      },
+      {
+        "name": "Device Recovery",
+        "description": "Verify device can be recovered if compromised",
+        "steps": [
+          "Simulate device compromise",
+          "Trigger remote wipe",
+          "Re-enroll device",
+          "Verify full functionality restored"
+        ]
+      }
+    ],
+    
+    "acceptance_criteria": {
+      "enrollment_success_rate": "99%",
+      "emergency_activation_time": "< 30 seconds",
+      "offline_operation_duration": "> 72 hours",
+      "device_recovery_time": "< 2 hours"
+    }
+  }
+}

@@ -11,7 +11,30 @@ const which = require('which');
 
 // Configure logging
 log.transports.file.level = 'info';
+log.transports.file.maxSize = 10 * 1024 * 1024; // 10MB
 autoUpdater.logger = log;
+
+// Configure auto-updater
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
+autoUpdater.allowDowngrade = false;
+
+// Release channel configuration
+const releaseChannel = process.env.GRAHMOS_RELEASE_CHANNEL || 'latest';
+const updateServerUrl = process.env.GRAHMOS_UPDATE_URL || 'https://releases.grahmos.com';
+
+if (app.isPackaged) {
+  autoUpdater.setFeedURL({
+    provider: 'generic',
+    url: `${updateServerUrl}/${releaseChannel}`,
+    channel: releaseChannel
+  });
+}
+
+log.info(`Auto-updater configured for channel: ${releaseChannel}`);
+log.info(`Update server URL: ${updateServerUrl}`);
+log.info(`App version: ${app.getVersion()}`);
+log.info(`Platform: ${process.platform}-${process.arch}`);
 
 class GrahmosInstaller {
   constructor() {
@@ -120,6 +143,65 @@ class GrahmosInstaller {
     // Open external links
     ipcMain.handle('open-external', async (event, url) => {
       await shell.openExternal(url);
+    });
+    
+    // Update management
+    ipcMain.handle('check-for-updates', async () => {
+      if (!app.isPackaged) {
+        return { available: false, reason: 'Development mode' };
+      }
+      
+      try {
+        const updateCheckResult = await autoUpdater.checkForUpdates();
+        return {
+          available: !!updateCheckResult?.updateInfo,
+          updateInfo: updateCheckResult?.updateInfo
+        };
+      } catch (error) {
+        log.error('Update check failed:', error);
+        return { available: false, error: error.message };
+      }
+    });
+    
+    ipcMain.handle('download-update', async () => {
+      try {
+        await autoUpdater.downloadUpdate();
+        return { success: true };
+      } catch (error) {
+        log.error('Update download failed:', error);
+        return { success: false, error: error.message };
+      }
+    });
+    
+    ipcMain.handle('install-update', async () => {
+      autoUpdater.quitAndInstall(false, true);
+    });
+    
+    ipcMain.handle('get-current-version', () => {
+      return {
+        version: app.getVersion(),
+        channel: releaseChannel,
+        platform: `${process.platform}-${process.arch}`
+      };
+    });
+    
+    ipcMain.handle('switch-release-channel', async (event, newChannel) => {
+      // This would require a restart to take effect
+      // Store the new channel preference
+      const configPath = path.join(os.homedir(), '.grahmos', 'config.json');
+      try {
+        await fs.mkdir(path.dirname(configPath), { recursive: true });
+        const config = { releaseChannel: newChannel };
+        await fs.writeFile(configPath, JSON.stringify(config, null, 2));
+        
+        return {
+          success: true,
+          message: 'Release channel will be updated on next restart',
+          requiresRestart: true
+        };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
     });
   }
 
@@ -584,31 +666,78 @@ app.on('activate', async () => {
   }
 });
 
-// Auto updater events
+// Auto updater events with enhanced user communication
 autoUpdater.on('checking-for-update', () => {
   log.info('Checking for update...');
+  if (installer.mainWindow) {
+    installer.mainWindow.webContents.send('update-checking');
+  }
 });
 
 autoUpdater.on('update-available', (info) => {
-  log.info('Update available.');
+  log.info('Update available:', info.version);
+  if (installer.mainWindow) {
+    installer.mainWindow.webContents.send('update-available', {
+      version: info.version,
+      releaseNotes: info.releaseNotes,
+      releaseDate: info.releaseDate,
+      size: info.files ? info.files[0]?.size : null
+    });
+  }
 });
 
 autoUpdater.on('update-not-available', (info) => {
   log.info('Update not available.');
+  if (installer.mainWindow) {
+    installer.mainWindow.webContents.send('update-not-available');
+  }
 });
 
 autoUpdater.on('error', (err) => {
-  log.error('Error in auto-updater. ' + err);
+  log.error('Error in auto-updater:', err);
+  if (installer.mainWindow) {
+    installer.mainWindow.webContents.send('update-error', {
+      message: err.message,
+      stack: err.stack
+    });
+  }
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
-  let log_message = "Download speed: " + progressObj.bytesPerSecond;
-  log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-  log.info(log_message);
+  const logMessage = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}% (${progressObj.transferred}/${progressObj.total})`;
+  log.info(logMessage);
+  
+  if (installer.mainWindow) {
+    installer.mainWindow.webContents.send('update-download-progress', {
+      percent: Math.round(progressObj.percent),
+      bytesPerSecond: progressObj.bytesPerSecond,
+      transferred: progressObj.transferred,
+      total: progressObj.total
+    });
+  }
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-  log.info('Update downloaded');
-  autoUpdater.quitAndInstall();
+  log.info('Update downloaded, ready to install');
+  if (installer.mainWindow) {
+    installer.mainWindow.webContents.send('update-downloaded', {
+      version: info.version,
+      releaseNotes: info.releaseNotes
+    });
+  }
+  
+  // Show user prompt instead of auto-installing
+  const response = dialog.showMessageBoxSync(installer.mainWindow, {
+    type: 'info',
+    title: 'Update Ready',
+    message: `Grahmos ${info.version} has been downloaded and is ready to install.`,
+    detail: 'The application will restart to apply the update.',
+    buttons: ['Install Now', 'Install Later'],
+    defaultId: 0,
+    cancelId: 1
+  });
+  
+  if (response === 0) {
+    autoUpdater.quitAndInstall(false, true);
+  }
 });

@@ -1,0 +1,68 @@
+Windows Registry Editor Version 5.00
+
+; GrahmOS Protocol Handler Registration
+; This file registers the grahmos:// protocol scheme in Windows Registry
+
+[HKEY_CLASSES_ROOT\grahmos]
+@="URL:GrahmOS Protocol"
+"URL Protocol"=""
+"FriendlyTypeName"="GrahmOS Protocol"
+
+[HKEY_CLASSES_ROOT\grahmos\DefaultIcon]
+@="\"C:\\Program Files\\GrahmOS\\grahmos.exe\",0"
+
+[HKEY_CLASSES_ROOT\grahmos\shell]
+
+[HKEY_CLASSES_ROOT\grahmos\shell\open]
+
+[HKEY_CLASSES_ROOT\grahmos\shell\open\command]
+@="\"C:\\Program Files\\GrahmOS\\grahmos.exe\" \"%1\""
+
+; Application Registration
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Applications\grahmos.exe]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Applications\grahmos.exe\SupportedTypes]
+".html"=""
+".htm"=""
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Applications\grahmos.exe\shell]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Applications\grahmos.exe\shell\open]
+"FriendlyAppName"="GrahmOS"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\Applications\grahmos.exe\shell\open\command]
+@="\"C:\\Program Files\\GrahmOS\\grahmos.exe\" \"%1\""
+
+; File Association (Optional)
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.grahmos]
+
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.grahmos\OpenWithList]
+
+; App Capabilities
+[HKEY_LOCAL_MACHINE\SOFTWARE\GrahmOS\Capabilities]
+"ApplicationName"="GrahmOS"
+"ApplicationDescription"="AI-powered, P2P-native, decentralized operating system"
+"ApplicationIcon"="C:\\Program Files\\GrahmOS\\grahmos.exe,0"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\GrahmOS\Capabilities\URLAssociations]
+"grahmos"="GrahmOS"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\RegisteredApplications]
+"GrahmOS"="SOFTWARE\\GrahmOS\\Capabilities"
+
+; Start Menu Integration
+[HKEY_CURRENT_USER\SOFTWARE\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache]
+"C:\\Program Files\\GrahmOS\\grahmos.exe.FriendlyAppName"="GrahmOS"
+"C:\\Program Files\\GrahmOS\\grahmos.exe.ApplicationCompany"="Grahmos Foundation"
+
+; Security Zones (Allow localhost)
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\localhost]
+"*"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings\ZoneMap\Domains\grahmos.localhost]
+"*"=dword:00000001
+
+; Windows 10/11 Default Apps
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\Shell\Associations\UrlAssociations\grahmos\UserChoice]
+"Hash"=""
+"ProgId"="grahmos"
