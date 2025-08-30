@@ -100,24 +100,57 @@ export default function MapView({
         </div>
       </div>
 
-      {/* Layer Controls */}
-      <div className="absolute top-4 right-4 z-10">
-        <div className="bg-neutral-900/90 border border-neutral-700 rounded-lg p-3">
-          <h3 className="text-sm font-medium mb-2">Emergency Layers</h3>
-          <div className="space-y-1 text-xs">
-            {['evacuation-route', 'evacuation-point', 'hazard-zone', 'safe-zone'].map(type => {
+      {/* Layer Controls & Legend */}
+      <div className="absolute top-4 right-4 z-10 space-y-2">
+        {/* Layer Legend */}
+        <div className="bg-neutral-900/95 border border-neutral-700 rounded-lg p-3 backdrop-blur-sm">
+          <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+            📊 Emergency Layers
+            <span className="text-xs text-neutral-400">({overlays.length} total)</span>
+          </h3>
+          <div className="space-y-2 text-xs">
+            {[
+              { type: 'evacuation-point', icon: '🏠', label: 'Shelters & Assembly Points' },
+              { type: 'evacuation-route', icon: '🛣️', label: 'Evacuation Routes' },
+              { type: 'safe-zone', icon: '🟢', label: 'Safe Assembly Zones' },
+              { type: 'hazard-zone', icon: '⚠️', label: 'Hazard Risk Areas' }
+            ].map(({ type, icon, label }) => {
               const count = overlays.filter(o => o.type === type).length
+              const hasData = count > 0
               return (
-                <div key={type} className="flex items-center gap-2">
+                <div key={type} className={`flex items-center gap-2 ${!hasData ? 'opacity-50' : ''}`}>
+                  <span className="text-sm">{icon}</span>
                   <div 
-                    className="w-3 h-3 rounded"
-                    style={{ backgroundColor: getOverlayColor(type as MapOverlay['type']) }}
+                    className="w-3 h-3 rounded border"
+                    style={{ 
+                      backgroundColor: hasData ? getOverlayColor(type as MapOverlay['type']) : 'transparent',
+                      borderColor: getOverlayColor(type as MapOverlay['type'])
+                    }}
                   />
-                  <span className="capitalize">{type.replace('-', ' ')}</span>
-                  <span className="text-neutral-400">({count})</span>
+                  <span className="flex-1">{label}</span>
+                  <span className="text-neutral-400 font-mono">({count})</span>
                 </div>
               )
             })}
+          </div>
+        </div>
+        
+        {/* Quick Stats */}
+        <div className="bg-neutral-900/95 border border-neutral-700 rounded-lg p-3 backdrop-blur-sm">
+          <h4 className="text-xs font-medium text-neutral-400 mb-2">Bay Area Coverage</h4>
+          <div className="space-y-1 text-xs">
+            <div className="flex justify-between">
+              <span>Shelters:</span>
+              <span className="font-mono">{overlays.filter(o => o.type === 'evacuation-point').length}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Safe Zones:</span>
+              <span className="font-mono">{overlays.filter(o => o.type === 'safe-zone').length}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Risk Areas:</span>
+              <span className="font-mono">{overlays.filter(o => o.type === 'hazard-zone').length}</span>
+            </div>
           </div>
         </div>
       </div>

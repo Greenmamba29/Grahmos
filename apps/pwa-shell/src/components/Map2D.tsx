@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useMemo, useState } from 'react'
 import { Map, MapRef, Source, Layer } from 'react-map-gl/maplibre'
 import { DeckGL } from '@deck.gl/react'
 import { LineLayer, ScatterplotLayer, PolygonLayer } from '@deck.gl/layers'
@@ -23,6 +23,8 @@ export default function Map2D({
   onLocationSelect 
 }: Map2DProps) {
   const mapRef = useRef<MapRef>(null)
+  const [hoveredObject, setHoveredObject] = useState<any>(null)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
   // Create Deck.gl layers from overlays
   const deckLayers = useMemo(() => {

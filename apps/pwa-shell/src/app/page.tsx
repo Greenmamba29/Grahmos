@@ -26,36 +26,143 @@ export default function Page(){
   const [showBuy, setShowBuy] = useState(false)
   const [activeTab, setActiveTab] = useState<'search' | 'mapping' | 'assistant'>('search')
 
-  // Sample emergency overlays for mapping demo
+  // Comprehensive emergency overlays with realistic Bay Area data
   const emergencyOverlays = [
+    // Evacuation Points (Shelters & Safety Centers)
     {
-      id: 'evac-1',
+      id: 'shelter-moscone',
       type: 'evacuation-point' as const,
-      coordinates: [[-122.4194, 37.7749]], // San Francisco
+      coordinates: [[-122.4039, 37.7840]], // Moscone Center
       properties: {
-        name: 'Emergency Shelter A',
-        description: 'Primary evacuation center',
+        name: 'Moscone Center Emergency Shelter',
+        description: 'Primary evacuation center - capacity 5,000',
         priority: 'high' as const,
         status: 'active' as const
       }
     },
     {
-      id: 'route-1', 
+      id: 'shelter-presidio',
+      type: 'evacuation-point' as const,
+      coordinates: [[-122.4662, 37.7955]], // Presidio
+      properties: {
+        name: 'Presidio Emergency Center',
+        description: 'Secondary shelter with medical facilities',
+        priority: 'high' as const,
+        status: 'active' as const
+      }
+    },
+    {
+      id: 'shelter-ggpark',
+      type: 'evacuation-point' as const,
+      coordinates: [[-122.4530, 37.7694]], // Golden Gate Park
+      properties: {
+        name: 'Golden Gate Park Assembly Area',
+        description: 'Open area gathering point',
+        priority: 'medium' as const,
+        status: 'active' as const
+      }
+    },
+    
+    // Evacuation Routes
+    {
+      id: 'route-market-west',
       type: 'evacuation-route' as const,
-      coordinates: [[-122.4194, 37.7749], [-122.4094, 37.7849]], // Route path
+      coordinates: [[-122.4194, 37.7749], [-122.4662, 37.7955]], // Market St to Presidio
       properties: {
-        name: 'Main Evacuation Route',
+        name: 'Market Street to Presidio Route',
+        description: 'Primary westbound evacuation corridor',
         priority: 'high' as const,
         status: 'active' as const
       }
     },
     {
-      id: 'hazard-1',
-      type: 'hazard-zone' as const, 
-      coordinates: [[-122.43, 37.77], [-122.42, 37.77], [-122.42, 37.78], [-122.43, 37.78]], // Polygon
+      id: 'route-19th-avenue',
+      type: 'evacuation-route' as const,
+      coordinates: [[-122.4269, 37.7849], [-122.4269, 37.7200]], // 19th Ave north-south
       properties: {
-        name: 'Flood Risk Area',
-        description: 'High flood risk during storms',
+        name: '19th Avenue Evacuation Corridor',
+        description: 'Major north-south evacuation route',
+        priority: 'high' as const,
+        status: 'active' as const
+      }
+    },
+    {
+      id: 'route-geary',
+      type: 'evacuation-route' as const,
+      coordinates: [[-122.4039, 37.7840], [-122.5089, 37.7816]], // Geary Blvd
+      properties: {
+        name: 'Geary Boulevard Evacuation Route',
+        description: 'East-west evacuation corridor to Ocean Beach',
+        priority: 'medium' as const,
+        status: 'active' as const
+      }
+    },
+    
+    // Hazard Zones
+    {
+      id: 'hazard-marina',
+      type: 'hazard-zone' as const,
+      coordinates: [[-122.4662, 37.8055], [-122.4400, 37.8055], [-122.4400, 37.7955], [-122.4662, 37.7955]], // Marina District
+      properties: {
+        name: 'Marina District Liquefaction Zone',
+        description: 'High earthquake liquefaction risk area',
+        priority: 'high' as const,
+        status: 'active' as const
+      }
+    },
+    {
+      id: 'hazard-soma-flood',
+      type: 'hazard-zone' as const,
+      coordinates: [[-122.4039, 37.7749], [-122.3900, 37.7749], [-122.3900, 37.7649], [-122.4039, 37.7649]], // SOMA flood zone
+      properties: {
+        name: 'SOMA Flood Risk Zone',
+        description: 'Sea level rise and storm surge vulnerability',
+        priority: 'medium' as const,
+        status: 'active' as const
+      }
+    },
+    {
+      id: 'hazard-wildfire',
+      type: 'hazard-zone' as const,
+      coordinates: [[-122.5200, 37.7600], [-122.4800, 37.7600], [-122.4800, 37.7300], [-122.5200, 37.7300]], // Western hills
+      properties: {
+        name: 'Wildfire Risk Zone - Western Hills',
+        description: 'High wildfire danger during dry conditions',
+        priority: 'medium' as const,
+        status: 'active' as const
+      }
+    },
+    
+    // Safe Zones
+    {
+      id: 'safe-ggpark',
+      type: 'safe-zone' as const,
+      coordinates: [[-122.4750, 37.7730], [-122.4530, 37.7730], [-122.4530, 37.7650], [-122.4750, 37.7650]], // Golden Gate Park
+      properties: {
+        name: 'Golden Gate Park Safe Zone',
+        description: 'Large open area away from buildings',
+        priority: 'high' as const,
+        status: 'active' as const
+      }
+    },
+    {
+      id: 'safe-crissy',
+      type: 'safe-zone' as const,
+      coordinates: [[-122.4700, 37.8055], [-122.4500, 37.8055], [-122.4500, 37.8000], [-122.4700, 37.8000]], // Crissy Field
+      properties: {
+        name: 'Crissy Field Safe Assembly Area',
+        description: 'Open field with emergency access',
+        priority: 'high' as const,
+        status: 'active' as const
+      }
+    },
+    {
+      id: 'safe-mission-dolores',
+      type: 'safe-zone' as const,
+      coordinates: [[-122.4269, 37.7649], [-122.4200, 37.7649], [-122.4200, 37.7600], [-122.4269, 37.7600]], // Mission Dolores Park
+      properties: {
+        name: 'Mission Dolores Park Assembly Area',
+        description: 'Designated community gathering point',
         priority: 'medium' as const,
         status: 'active' as const
       }
