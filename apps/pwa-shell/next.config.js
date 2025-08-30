@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true
+  },
   transpilePackages: ['p2p-delta', 'crypto-verify', 'local-db', 'search-core'],
   experimental: {
     esmExternals: 'loose'
