@@ -373,7 +373,7 @@ test_search_pipeline() {
     
     # Test authentication integration with search
     if [[ -f "edge-api/dist/server.js" ]]; then
-        if ! grep -q "verifyJwt.*search" edge-api/dist/server.js && ! grep -A10 -B10 "'/search'" edge-api/dist/server.js | grep -q "auth"; then
+        if ! grep -A10 -B10 "'/search'" edge-api/dist/server.js | grep -qE "(req\.user|auth|verifyJwt)"; then
             result="FAIL"
             details="Authentication not integrated with search pipeline"
         fi

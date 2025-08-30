@@ -22,7 +22,8 @@ export async function flushPurchases(pubkeyB64:string){
       await db.receipts.put({ id: receipt.orderId, intentId: it.id, ts: receipt.ts, payload: receipt, sig })
       await db.purchaseQueue.update(it.id, { status: 'ok' })
     } catch(e: unknown){
-      await db.purchaseQueue.update(it.id, { status: 'queued', lastError: e instanceof Error ? e.message : String(e) })
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      await db.purchaseQueue.update(it.id, { status: 'queued', lastError: errorMessage })
     }
   }
 }
