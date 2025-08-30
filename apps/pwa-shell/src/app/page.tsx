@@ -184,32 +184,32 @@ export default function Page(){
     <div className="space-y-4">
       {/* Tab Navigation */}
       <div className="border-b border-neutral-800">
-        <div className="flex space-x-8">
+        <div className="flex space-x-1">
           <button
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg transition-colors ${
               activeTab === 'search'
-                ? 'border-blue-500 text-blue-300'
-                : 'border-transparent text-neutral-400 hover:text-neutral-300'
+                ? 'border-blue-500 text-blue-300 bg-neutral-900'
+                : 'border-transparent text-neutral-400 hover:text-neutral-300 hover:bg-neutral-800'
             }`}
             onClick={() => setActiveTab('search')}
           >
             🔍 Search & Documentation
           </button>
           <button
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg transition-colors ${
               activeTab === 'mapping'
-                ? 'border-blue-500 text-blue-300'
-                : 'border-transparent text-neutral-400 hover:text-neutral-300'
+                ? 'border-blue-500 text-blue-300 bg-neutral-900'
+                : 'border-transparent text-neutral-400 hover:text-neutral-300 hover:bg-neutral-800'
             }`}
             onClick={() => setActiveTab('mapping')}
           >
             🗺️ Emergency Mapping
           </button>
           <button
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg transition-colors ${
               activeTab === 'assistant'
-                ? 'border-blue-500 text-blue-300'
-                : 'border-transparent text-neutral-400 hover:text-neutral-300'
+                ? 'border-blue-500 text-blue-300 bg-neutral-900'
+                : 'border-transparent text-neutral-400 hover:text-neutral-300 hover:bg-neutral-800'
             }`}
             onClick={() => setActiveTab('assistant')}
           >
@@ -252,15 +252,36 @@ export default function Page(){
               )}
             </li>
           ))}
-          {(!results || results.length===0) && !loading && (
-            <li className="p-3 opacity-60 text-sm">
-              No results yet. Try &quot;First Aid&quot;
-              <button 
-                className="ml-3 px-2 py-1 text-xs rounded bg-blue-700 hover:bg-blue-600" 
-                onClick={() => setShowBuy(true)}
-              >
-                Buy First Aid Kit
-              </button>
+          {(!results || results.length===0) && !loading && q.trim().length === 0 && (
+            <li className="p-4 text-center">
+              <div className="text-neutral-300 mb-3">
+                🔍 **Try searching for:**
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {[
+                  'First Aid', 'Earthquake', 'Fire Safety', 'Water Storage',
+                  'Evacuation', 'Emergency Kit', 'Power Outage', 'CPR'
+                ].map(term => (
+                  <button
+                    key={term}
+                    className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg transition-colors text-left"
+                    onClick={() => setQ(term)}
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 text-xs text-neutral-500">
+                Search through {loading ? '...' : '10+'} emergency preparedness articles
+              </div>
+            </li>
+          )}
+          {(!results || results.length===0) && !loading && q.trim().length > 0 && (
+            <li className="p-4 text-center text-neutral-400">
+              <div className="mb-2">🔍 No results found for "{q}"</div>
+              <div className="text-xs text-neutral-500">
+                Try different keywords like "first aid", "earthquake", or "emergency"
+              </div>
             </li>
           )}
         </ul>
