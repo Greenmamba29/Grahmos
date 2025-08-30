@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import useOnline from '@/lib/useOnline'
 import { useOfflineSearch, type Doc } from '@/lib/search'
+import ContentViewer from '@/components/ContentViewer'
 import PurchaseModal from './purchase/PurchaseModal'
 import dynamic from 'next/dynamic'
 import AIAssistant from './components/AIAssistant'
@@ -21,10 +22,9 @@ export default function Page(){
   const { loading, error, search } = useOfflineSearch()
   const [q,setQ] = useState('')
   const [results,setResults] = useState<Doc[]>([])
-  const [activePath,setActivePath] = useState<string | null>(null)
+  const [activeDoc, setActiveDoc] = useState<Doc | null>(null)
   const [showBuy, setShowBuy] = useState(false)
   const [activeTab, setActiveTab] = useState<'search' | 'mapping' | 'assistant'>('search')
-  const iframeRef = useRef<HTMLIFrameElement|null>(null)
 
   // Sample emergency overlays for mapping demo
   const emergencyOverlays = [
@@ -129,9 +129,20 @@ export default function Page(){
         {error && <p className="text-red-400 text-sm">{error}</p>}
         <ul className="divide-y divide-neutral-800 rounded-lg overflow-hidden border border-neutral-800">
           {results.map((r: Doc)=> (
-            <li key={r.id} className="p-3 hover:bg-neutral-900 cursor-pointer" onClick={()=>setActivePath(r.url)}>
+            <li 
+              key={r.id} 
+              className={`p-3 hover:bg-neutral-900 cursor-pointer transition-colors ${
+                activeDoc?.id === r.id ? 'bg-neutral-800 border-l-2 border-blue-500' : ''
+              }`} 
+              onClick={()=>setActiveDoc(r)}
+            >
               <div className="font-medium">{r.title}</div>
               {r.summary && <div className="opacity-60 text-sm line-clamp-2">{r.summary}</div>}
+              {r.category && (
+                <div className={`inline-block px-1 py-0.5 text-xs rounded mt-1 ${getCategoryColorSmall(r.category)}`}>
+                  {r.category.replace('-', ' ')}
+                </div>
+              )}
             </li>
           ))}
           {(!results || results.length===0) && !loading && (
@@ -148,12 +159,8 @@ export default function Page(){
         </ul>
           </div>
 
-          <div className="border border-neutral-800 rounded-xl overflow-hidden min-h-[60vh]">
-            {!activePath ? (
-              <div className="p-6 opacity-70 text-sm">Select a result to open. Articles will be loaded via <code>/api/kiwix?path=…</code> and cached for offline revisit.</div>
-            ) : (
-              <iframe ref={iframeRef} className="w-full h-[70vh] bg-white" src={`/api/kiwix?path=${encodeURIComponent(activePath)}`} />
-            )}
+          <div className="border border-neutral-800 rounded-xl overflow-hidden min-h-[60vh] bg-neutral-900">
+            <ContentViewer doc={activeDoc} className="h-[60vh] overflow-y-auto" />
           </div>
         </div>
       ) : activeTab === 'mapping' ? (
@@ -190,4 +197,17 @@ export default function Page(){
       )}
     </div>
   )
+}
+
+// Helper function for small category colors
+function getCategoryColorSmall(category: string): string {
+  const colors: Record<string, string> = {
+    'medical': 'bg-red-800 text-red-200',
+    'safety': 'bg-orange-800 text-orange-200', 
+    'survival': 'bg-green-800 text-green-200',
+    'natural-disaster': 'bg-yellow-800 text-yellow-200',
+    'planning': 'bg-blue-800 text-blue-200',
+    'utilities': 'bg-purple-800 text-purple-200',
+  }
+  return colors[category] || 'bg-neutral-700 text-neutral-300'
 }

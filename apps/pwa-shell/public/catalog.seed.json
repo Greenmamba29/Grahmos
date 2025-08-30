@@ -1,5 +1,102 @@
 [
-  {"id":"w_en_1","title":"First Aid","url":"/A/First_aid.html","summary":"Basic first aid overview."},
-  {"id":"w_en_2","title":"Evacuation route","url":"/A/Emergency_evacuation.html","summary":"Evacuation procedures."},
-  {"id":"w_en_3","title":"Water purification","url":"/A/Water_purification.html","summary":"Methods to purify water."}
+  {
+    "id": "emr_001",
+    "title": "Emergency First Aid Basics",
+    "url": "/emergency/first-aid-basics",
+    "summary": "Essential first aid techniques for common emergencies including CPR, wound care, and shock treatment.",
+    "content": "Learn life-saving first aid techniques: Check for responsiveness, call 911, control bleeding with direct pressure, treat for shock by elevating legs, and perform CPR if trained.",
+    "keywords": ["first aid", "CPR", "bleeding", "shock", "emergency", "medical"],
+    "category": "medical",
+    "priority": "high"
+  },
+  {
+    "id": "emr_002", 
+    "title": "Evacuation Procedures and Routes",
+    "url": "/emergency/evacuation-procedures",
+    "summary": "How to safely evacuate during emergencies, including route planning and what to bring.",
+    "content": "Know your evacuation routes, keep emergency supplies ready, stay calm, follow official instructions, and have a family meeting point.",
+    "keywords": ["evacuation", "escape route", "emergency exit", "disaster", "safety"],
+    "category": "safety",
+    "priority": "high"
+  },
+  {
+    "id": "emr_003",
+    "title": "Water Purification and Storage",
+    "url": "/emergency/water-purification",
+    "summary": "Methods to purify and store water safely during emergencies.",
+    "content": "Boil water for 1 minute, use water purification tablets, store 1 gallon per person per day, and keep containers clean.",
+    "keywords": ["water", "purification", "storage", "hydration", "survival"],
+    "category": "survival",
+    "priority": "high"
+  },
+  {
+    "id": "emr_004",
+    "title": "Emergency Food Supplies",
+    "url": "/emergency/food-supplies",
+    "summary": "Essential food storage and preparation for emergency situations.",
+    "content": "Store at least 3 days of non-perishable food per person. Include canned goods, dried foods, energy bars, and manual can openers.",
+    "keywords": ["food", "supplies", "storage", "nutrition", "emergency kit"],
+    "category": "survival",
+    "priority": "medium"
+  },
+  {
+    "id": "emr_005",
+    "title": "Earthquake Safety Procedures",
+    "url": "/emergency/earthquake-safety",
+    "summary": "What to do before, during, and after an earthquake to stay safe.",
+    "content": "Drop, Cover, and Hold On during shaking. Get under a sturdy table, protect your head, and stay away from windows and heavy objects.",
+    "keywords": ["earthquake", "drop cover hold", "seismic", "natural disaster"],
+    "category": "natural-disaster",
+    "priority": "high"
+  },
+  {
+    "id": "emr_006",
+    "title": "Fire Emergency Response",
+    "url": "/emergency/fire-response",
+    "summary": "How to respond to fires and prevent fire emergencies.",
+    "content": "Call 911 immediately, evacuate quickly and safely, stay low under smoke, feel doors before opening, and have escape routes planned.",
+    "keywords": ["fire", "evacuation", "smoke", "escape", "emergency"],
+    "category": "safety",
+    "priority": "high"
+  },
+  {
+    "id": "emr_007",
+    "title": "Severe Weather Preparedness",
+    "url": "/emergency/severe-weather",
+    "summary": "Preparing for and responding to severe weather events like tornadoes and hurricanes.",
+    "content": "Monitor weather alerts, have a emergency kit ready, know safe rooms in your building, and avoid windows during storms.",
+    "keywords": ["weather", "tornado", "hurricane", "storm", "shelter"],
+    "category": "natural-disaster",
+    "priority": "medium"
+  },
+  {
+    "id": "emr_008",
+    "title": "Emergency Communication Plan",
+    "url": "/emergency/communication-plan",
+    "summary": "How to stay connected with family and authorities during emergencies.",
+    "content": "Keep phones charged, have backup power sources, designate out-of-area contact person, and know local emergency frequencies.",
+    "keywords": ["communication", "phone", "radio", "contact", "family plan"],
+    "category": "planning",
+    "priority": "medium"
+  },
+  {
+    "id": "emr_009",
+    "title": "Power Outage Response",
+    "url": "/emergency/power-outage",
+    "summary": "Staying safe and comfortable during extended power outages.",
+    "content": "Use flashlights instead of candles, keep refrigerator closed, use generators outdoors only, and conserve phone battery.",
+    "keywords": ["power outage", "electricity", "flashlight", "generator", "safety"],
+    "category": "utilities",
+    "priority": "medium"
+  },
+  {
+    "id": "emr_010",
+    "title": "Emergency Shelter Setup",
+    "url": "/emergency/emergency-shelter",
+    "summary": "Creating temporary shelter and staying warm during emergencies.",
+    "content": "Find or create windproof shelter, insulate from ground, conserve body heat, and signal for rescue if needed.",
+    "keywords": ["shelter", "warmth", "survival", "temporary", "protection"],
+    "category": "survival",
+    "priority": "low"
+  }
 ]
