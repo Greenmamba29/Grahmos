@@ -1,17 +1,14 @@
 /**
  * OpenTelemetry Web Instrumentation for Grahmos PWA Shell
- * Provides comprehensive telemetry, metrics, and user analytics
+ * Simplified version with correct Web SDK integration
  */
 
-import { getWebAutoInstrumentations } from '@opentelemetry/auto-instrumentations-web';
-import { WebSDK } from '@opentelemetry/sdk-web';
-import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { WebTracerProvider } from '@opentelemetry/sdk-trace-web';
+// import { Resource } from '@opentelemetry/resources';
+// import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { 
   metrics,
   trace,
-  context,
-  propagation,
   SpanKind,
   SpanStatusCode 
 } from '@opentelemetry/api';
@@ -27,8 +24,6 @@ const ENVIRONMENT = process.env.NODE_ENV || 'development';
 // Telemetry configuration
 interface TelemetryConfig {
   enabled: boolean;
-  collectorUrl: string;
-  sampleRate: number;
   enableUserInteraction: boolean;
   enablePerformance: boolean;
   enableErrors: boolean;
@@ -36,15 +31,13 @@ interface TelemetryConfig {
 
 const defaultConfig: TelemetryConfig = {
   enabled: process.env.NEXT_PUBLIC_TELEMETRY_ENABLED !== 'false',
-  collectorUrl: process.env.NEXT_PUBLIC_OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318',
-  sampleRate: parseFloat(process.env.NEXT_PUBLIC_TELEMETRY_SAMPLE_RATE || '0.1'),
   enableUserInteraction: true,
   enablePerformance: true,
   enableErrors: true,
 };
 
 class GrahmosTelemetry {
-  private sdk: WebSDK | null = null;
+  private tracerProvider: WebTracerProvider | null = null;
   private isInitialized = false;
   private config: TelemetryConfig;
   
@@ -65,47 +58,11 @@ class GrahmosTelemetry {
   
   private initialize() {
     try {
-      // Create resource with application metadata
-      const resource = new Resource({
-        [SemanticResourceAttributes.SERVICE_NAME]: APP_NAME,
-        [SemanticResourceAttributes.SERVICE_VERSION]: APP_VERSION,
-        [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: ENVIRONMENT,
-        [SemanticResourceAttributes.SERVICE_NAMESPACE]: 'grahmos',
-        'application.type': 'pwa',
-        'application.platform': 'web'
-      });
+      // Create tracer provider without resource for simplicity
+      this.tracerProvider = new WebTracerProvider();
       
-      // Configure SDK
-      this.sdk = new WebSDK({
-        resource,
-        instrumentations: getWebAutoInstrumentations({
-          '@opentelemetry/instrumentation-document-load': {
-            enabled: this.config.enablePerformance,
-          },
-          '@opentelemetry/instrumentation-user-interaction': {
-            enabled: this.config.enableUserInteraction,
-            eventNames: ['click', 'submit', 'keydown'],
-          },
-          '@opentelemetry/instrumentation-xml-http-request': {
-            enabled: true,
-            propagateTraceHeaderCorsUrls: /.*/,
-          },
-          '@opentelemetry/instrumentation-fetch': {
-            enabled: true,
-            propagateTraceHeaderCorsUrls: /.*/,
-            clearTimingResources: true,
-          },
-        }),
-        traceExporter: {
-          url: `${this.config.collectorUrl}/v1/traces`,
-        },
-        metricExporter: {
-          url: `${this.config.collectorUrl}/v1/metrics`,
-        },
-      });
-      
-      // Initialize SDK
-      this.sdk.start();
+      // Register the provider
+      trace.setGlobalTracerProvider(this.tracerProvider);
       
       // Initialize custom instrumentations
       this.initializeCustomInstrumentations();
@@ -122,7 +79,7 @@ class GrahmosTelemetry {
   }
   
   private initializeCustomInstrumentations() {
-    // Custom fetch instrumentation for API calls
+    // Register basic instrumentations
     registerInstrumentations({
       instrumentations: [
         new FetchInstrumentation({
@@ -130,9 +87,9 @@ class GrahmosTelemetry {
             // Ignore telemetry endpoints to prevent loops
             /.*\/v1\/(traces|metrics|logs).*/,
           ],
-          applyCustomAttributesOnSpan: (span, request) => {
+          applyCustomAttributesOnSpan: (span: any, request: any) => {
             // Add custom attributes for Grahmos API calls
-            if (request.url.includes('/api/')) {
+            if (request.url?.includes('/api/')) {
               span.setAttributes({
                 'grahmos.api.endpoint': new URL(request.url).pathname,
                 'grahmos.api.version': request.url.includes('/v1/') ? 'v1' : 
@@ -144,7 +101,7 @@ class GrahmosTelemetry {
         
         new UserInteractionInstrumentation({
           eventNames: ['click', 'submit', 'change', 'keydown'],
-          shouldPreventSpanCreation: (eventType, element) => {
+          shouldPreventSpanCreation: (eventType: any, element: any) => {
             // Ignore tracking pixels and analytics elements
             return element?.classList?.contains('no-telemetry') || false;
           },
@@ -185,36 +142,6 @@ class GrahmosTelemetry {
       description: 'Duration of various operations',
       unit: 'ms',
     });
-    
-    // Initialize performance observer for Core Web Vitals
-    this.initializeWebVitals();
-  }
-  
-  private initializeWebVitals() {
-    if (typeof window === 'undefined') return;
-    
-    // Largest Contentful Paint (LCP)
-    if ('PerformanceObserver' in window) {
-      try {
-        const observer = new PerformanceObserver((list) => {
-          const entries = list.getEntries();
-          const lastEntry = entries[entries.length - 1];
-          
-          this.recordMetric('core_web_vitals', {
-            metric: 'lcp',
-            value: lastEntry.startTime,
-            url: window.location.pathname,
-          });
-        });
-        
-        observer.observe({ entryTypes: ['largest-contentful-paint'] });
-      } catch (error) {
-        console.warn('Could not initialize LCP observer:', error);
-      }
-    }
-    
-    // First Input Delay (FID) and Cumulative Layout Shift (CLS)
-    // These would be implemented similarly with appropriate performance observers
   }
   
   // Public API methods
@@ -227,8 +154,8 @@ class GrahmosTelemetry {
     
     const attributes = {
       'page.path': pathname,
-      'page.referrer': document.referrer,
-      'user_agent': navigator.userAgent,
+      'page.referrer': typeof document !== 'undefined' ? document.referrer : '',
+      'user_agent': typeof navigator !== 'undefined' ? navigator.userAgent : '',
       ...additionalAttributes,
     };
     
@@ -312,7 +239,7 @@ class GrahmosTelemetry {
       'error.message': error.message,
       'error.context': context,
       'error.severity': severity,
-      'page.path': window.location.pathname,
+      'page.path': typeof window !== 'undefined' ? window.location.pathname : '',
     };
     
     this.errorCounter?.add(1, attributes);
@@ -414,8 +341,8 @@ class GrahmosTelemetry {
    * Flush all pending telemetry data
    */
   async flush(): Promise<void> {
-    if (this.sdk) {
-      await this.sdk.shutdown();
+    if (this.tracerProvider) {
+      await this.tracerProvider.shutdown();
     }
   }
 }

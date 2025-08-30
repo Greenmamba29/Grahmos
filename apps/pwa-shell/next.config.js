@@ -19,6 +19,12 @@ const nextConfig = {
         os: false,
       }
       
+      // Exclude server-only files from client bundle
+      config.module.rules.push({
+        test: /\.server\.(ts|tsx|js|jsx)$/,
+        loader: 'ignore-loader'
+      })
+      
       // Handle Cesium's use of require in browser
       config.module.rules.push({
         test: /cesium.*\.js$/,

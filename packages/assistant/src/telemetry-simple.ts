@@ -1,43 +1,27 @@
 /**
- * OpenTelemetry Node.js Instrumentation for Grahmos Assistant Package
- * Provides server-side telemetry for AI assistant operations
+ * Simplified OpenTelemetry instrumentation for Grahmos Assistant Package
+ * Provides basic telemetry for AI assistant operations without complex setup
  */
 
-// Simplified imports without complex SDK setup
-// import { NodeSDK } from '@opentelemetry/sdk-node';
-// import { Resource } from '@opentelemetry/resources';
-// import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-// import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { 
   metrics,
   trace,
   SpanKind,
   SpanStatusCode 
 } from '@opentelemetry/api';
-import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
-import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
 // Application configuration
 const APP_NAME = 'grahmos-assistant';
 const APP_VERSION = process.env.GRAHMOS_ASSISTANT_VERSION || '2.0.0';
-const ENVIRONMENT = process.env.NODE_ENV || 'development';
 
 // Telemetry configuration
 interface AssistantTelemetryConfig {
   enabled: boolean;
-  collectorUrl: string;
-  prometheusPort: number;
-  sampleRate: number;
-  enableTracing: boolean;
   enableMetrics: boolean;
 }
 
 const defaultConfig: AssistantTelemetryConfig = {
   enabled: process.env.ASSISTANT_TELEMETRY_ENABLED !== 'false',
-  collectorUrl: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318',
-  prometheusPort: parseInt(process.env.PROMETHEUS_METRICS_PORT || '9464'),
-  sampleRate: parseFloat(process.env.TELEMETRY_SAMPLE_RATE || '0.1'),
-  enableTracing: true,
   enableMetrics: true,
 };
 
@@ -63,7 +47,7 @@ class AssistantTelemetry {
   
   private initialize() {
     try {
-      // Initialize custom metrics only
+      // Initialize custom metrics
       this.initializeMetrics();
       
       this.isInitialized = true;
@@ -210,8 +194,7 @@ class AssistantTelemetry {
    */
   startSpan(
     name: string,
-    attributes: Record<string, any> = {},
-    parentSpan?: any
+    attributes: Record<string, any> = {}
   ) {
     if (!this.isInitialized) return null;
     
@@ -223,10 +206,6 @@ class AssistantTelemetry {
         ...attributes,
       },
     });
-    // Set parent manually if provided
-    if (parentSpan) {
-      (span as any).setParent && (span as any).setParent(parentSpan);
-    }
     return span;
   }
   
@@ -247,8 +226,7 @@ class AssistantTelemetry {
   recordError(
     error: Error,
     component: 'llm' | 'tts' | 'session' | 'general',
-    severity: 'low' | 'medium' | 'high' | 'critical' = 'medium',
-    attributes: Record<string, any> = {}
+    severity: 'low' | 'medium' | 'high' | 'critical' = 'medium'
   ) {
     if (!this.isInitialized) return;
     
@@ -256,7 +234,6 @@ class AssistantTelemetry {
       'error.component': component,
       'error.type': error.name,
       'error.severity': severity,
-      ...attributes,
     });
     
     // Create error span
@@ -264,7 +241,6 @@ class AssistantTelemetry {
       'error.component': component,
       'error.severity': severity,
       'error.message': error.message,
-      ...attributes,
     });
     
     if (span) {
@@ -303,8 +279,8 @@ class AssistantTelemetry {
    * Flush all pending telemetry data
    */
   async flush(): Promise<void> {
-    // Simple flush for simplified telemetry
-    console.log('Assistant telemetry flush completed');
+    // Simple no-op flush for this simplified version
+    console.log('Telemetry flush completed');
   }
   
   /**
@@ -313,9 +289,7 @@ class AssistantTelemetry {
   getHealthMetrics() {
     return {
       telemetry_initialized: this.isInitialized,
-      prometheus_port: this.config.prometheusPort,
       metrics_enabled: this.config.enableMetrics,
-      tracing_enabled: this.config.enableTracing,
     };
   }
 }
@@ -326,16 +300,3 @@ const assistantTelemetry = new AssistantTelemetry();
 // Export singleton and class for custom configurations
 export { assistantTelemetry as default, AssistantTelemetry };
 export type { AssistantTelemetryConfig };
-
-// Graceful shutdown handler
-process.on('SIGTERM', async () => {
-  console.log('Shutting down assistant telemetry...');
-  await assistantTelemetry.flush();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  console.log('Shutting down assistant telemetry...');
-  await assistantTelemetry.flush();
-  process.exit(0);
-});

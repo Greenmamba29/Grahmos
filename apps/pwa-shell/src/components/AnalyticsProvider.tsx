@@ -62,11 +62,12 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
         error.name = 'UnhandledError';
         error.stack = event.filename ? `${event.filename}:${event.lineno}:${event.colno}` : undefined;
         
-        telemetry.recordError(error, 'global_error_handler', 'high', {
-          'error.filename': event.filename,
-          'error.line': event.lineno,
-          'error.column': event.colno,
-        });
+        // Set additional attributes on the error object
+        (error as any).filename = event.filename;
+        (error as any).lineno = event.lineno;
+        (error as any).colno = event.colno;
+        
+        telemetry.recordError(error, 'global_error_handler', 'high');
       }
     };
 
