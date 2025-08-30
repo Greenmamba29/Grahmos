@@ -1,4 +1,4 @@
-version: '3.8'
+# Removed version field as it's obsolete in newer Docker Compose
 
 services:
   # Meilisearch - Primary search backend
@@ -63,7 +63,6 @@ services:
       LOG_FORMAT: ${LOG_FORMAT:-json}
     
     volumes:
-      - edge_sockets:/var/run/edge
       - search_indexes:/data/indexes:ro
       - api_logs:/app/logs
     
