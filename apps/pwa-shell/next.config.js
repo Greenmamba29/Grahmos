@@ -44,12 +44,6 @@ const nextConfig = {
     }
     
     return config
-  },
-  async rewrites(){
-    return [
-      { source: '/purchase', destination: 'http://localhost:8787/purchase' },
-      { source: '/pubkey', destination: 'http://localhost:8787/pubkey' }
-    ]
   }
 }
 

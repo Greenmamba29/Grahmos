@@ -1,0 +1,56 @@
+[build]
+  # Build command for the PWA shell (main frontend app)
+  command = "pnpm install --frozen-lockfile && pnpm run build:apps"
+  publish = "apps/pwa-shell/out"
+  
+  # Environment variables for build
+  environment = { NODE_VERSION = "22.19.0", PNPM_VERSION = "10.14.0" }
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; font-src 'self' data:; object-src 'none'; frame-ancestors 'none';"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Redirects for SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin", "user"]}
+
+# Functions (if using Netlify Functions)
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "nft"
+
+# Development settings
+[dev]
+  command = "pnpm dev"
+  port = 3000
+  publish = "apps/pwa-shell/dist"
+  autoLaunch = true
+

@@ -1,6 +1,6 @@
 
-
-> edge-functions@1.0.0 build /workspace/apps/edge-functions
+
+> edge-functions@1.0.0 build /Users/paco/Downloads/Grahmos/apps/edge-functions
 > wrangler deploy --dry-run
 
 
@@ -8,10 +8,8 @@
 [38;2;255;136;0m───────────────────[39m
 Total Upload: [32m79.51 KiB / gzip: 15.17 KiB[39m
 Your Worker has access to the following bindings:
-[2mBinding[22m                    [2mResource[22m                
-[37menv.RECEIPT_PUBLIC_KEY[39m     [38;2;189;91;8mEnvironment Variable[39m    
-  [2m"R2x0r734631W9spz9AII2DQuJLByESkMRfbJR..."[22m
-[37menv.RECEIPT_PRIVATE_KEY[39m    [38;2;189;91;8mEnvironment Variable[39m    
-  [2m"CO+VqjJ8EfRJG0+PLFuu9q3KeGAyUBz1Kl/8/..."[22m
+[2mBinding[22m                                                                   [2mResource[22m                  
+[37menv.RECEIPT_PUBLIC_KEY[39m ([2m"R2x0r734631W9spz9AII2DQuJLByESkMRfbJR..."[22m)       [38;2;189;91;8mEnvironment Variable[39m      
+[37menv.RECEIPT_PRIVATE_KEY[39m ([2m"CO+VqjJ8EfRJG0+PLFuu9q3KeGAyUBz1Kl/8/..."[22m)      [38;2;189;91;8mEnvironment Variable[39m      
 
 --dry-run: exiting now.

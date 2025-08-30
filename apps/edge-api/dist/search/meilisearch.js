@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 export class MeilisearchBackend {
     name = 'meilisearch';
     baseUrl;
@@ -112,9 +111,9 @@ export class MeilisearchBackend {
             const version = versionResponse.ok ? await versionResponse.json() : null;
             return {
                 healthy: true,
-                version: version?.pkgVersion,
+                version: version?.pkgVersion || 'unknown',
                 indexSize: stats?.numberOfDocuments || 0,
-                lastUpdated: stats?.lastUpdate
+                lastUpdated: stats?.lastUpdate || 'unknown'
             };
         }
         catch (error) {
