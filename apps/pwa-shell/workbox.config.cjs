@@ -22,6 +22,27 @@ module.exports = {
         cacheableResponse: { statuses: [0, 200] },
         expiration: { maxEntries: 2000, maxAgeSeconds: 60 * 60 * 24 * 30 }
       }
+    },
+    // AI Assistant API
+    {
+      urlPattern: ({url}) => url.pathname.startsWith('/api/ai'),
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'ai-assistant',
+        cacheableResponse: { statuses: [0, 200] },
+        networkTimeoutSeconds: 10,
+        expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 } // 1 day
+      }
+    },
+    // AI model files and offline packs
+    {
+      urlPattern: ({url}) => /\.(bin|onnx|safetensors|model)$/i.test(url.pathname) || url.pathname.includes('/models/'),
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'ai-models',
+        cacheableResponse: { statuses: [0, 200] },
+        expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 90 } // 90 days
+      }
     }
   ]
 }

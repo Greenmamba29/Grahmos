@@ -1,18 +1,18 @@
 
-✅ [0;32mPASS[0m - SQLite FTS Search (50 queries): 1 ms
+✅ [0;32mPASS[0m - SQLite FTS Search (50 queries): 2 ms
 📊 [0;34mINFO[0m - Database Size (4 docs): 24 KB
-✅ [0;32mPASS[0m - File Write (100 lines): 2 ms
-✅ [0;32mPASS[0m - File Read (100 ops): 70 ms
-❌ [0;31mFAIL[0m - SHA256 Hashing (100 ops): 112 ms (target: <100 ms)
-✅ [0;32mPASS[0m - RSA Key Generation (2048-bit): 78 ms
+✅ [0;32mPASS[0m - File Write (100 lines): 1 ms
+✅ [0;32mPASS[0m - File Read (100 ops): 75 ms
+✅ [0;32mPASS[0m - SHA256 Hashing (100 ops): 115 ms
+✅ [0;32mPASS[0m - RSA Key Generation (2048-bit): 16 ms
 ✅ [0;32mPASS[0m - CPU Arithmetic (1000 ops): 3 ms
 ✅ [0;32mPASS[0m - Memory Allocation (1000 arrays): 3 ms
-✅ [0;32mPASS[0m - Request Processing Simulation (50 ops): 56 ms
+✅ [0;32mPASS[0m - Request Processing Simulation (50 ops): 57 ms
 ===================================
 LITE PERFORMANCE TESTING SUMMARY
 ===================================
 Total Tests: 10
-Passed: 8
-Failed: 1
-Performance Score: 80%
-End Time: 2025-08-28T23:00:08Z
+Passed: 9
+Failed: 0
+Performance Score: 90%
+End Time: 2025-08-29T08:11:20Z

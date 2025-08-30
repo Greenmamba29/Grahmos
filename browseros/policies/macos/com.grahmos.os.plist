@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Basic Configuration -->
+  <key>HomepageLocation</key>
+  <string>https://grahmos.localhost:3000</string>
+  
+  <key>NewTabPageLocation</key>
+  <string>https://grahmos.localhost:3000/launch</string>
+  
+  <key>RestoreOnStartup</key>
+  <integer>4</integer>
+  
+  <key>RestoreOnStartupURLs</key>
+  <array>
+    <string>https://grahmos.localhost:3000/launch</string>
+  </array>
+  
+  <!-- Search Provider -->
+  <key>DefaultSearchProviderEnabled</key>
+  <true/>
+  
+  <key>DefaultSearchProviderName</key>
+  <string>Grahmos Search</string>
+  
+  <key>DefaultSearchProviderKeyword</key>
+  <string>g</string>
+  
+  <key>DefaultSearchProviderSearchURL</key>
+  <string>https://grahmos.localhost:8787/search?q={searchTerms}</string>
+  
+  <key>DefaultSearchProviderSuggestURL</key>
+  <string>https://grahmos.localhost:8787/suggest?q={searchTerms}</string>
+  
+  <key>DefaultSearchProviderIconURL</key>
+  <string>https://grahmos.localhost:8787/assets/search-icon.png</string>
+  
+  <!-- Privacy & Security -->
+  <key>MetricsReportingEnabled</key>
+  <false/>
+  
+  <key>SyncDisabled</key>
+  <true/>
+  
+  <key>SigninAllowed</key>
+  <false/>
+  
+  <key>SafeBrowsingEnabled</key>
+  <true/>
+  
+  <key>SafeBrowsingExtendedReportingEnabled</key>
+  <false/>
+  
+  <!-- URL Policies -->
+  <key>URLAllowlist</key>
+  <array>
+    <string>https://grahmos.localhost:3000/*</string>
+    <string>https://grahmos.localhost:8787/*</string>
+    <string>https://*.grahmos.org/*</string>
+    <string>https://tile.openstreetmap.org/*</string>
+    <string>https://*.cesium.com/*</string>
+  </array>
+  
+  <key>URLBlocklist</key>
+  <array>
+    <string>*://facebook.com/*</string>
+    <string>*://twitter.com/*</string>
+    <string>*://tiktok.com/*</string>
+    <string>*://doubleclick.net/*</string>
+    <string>*://googlesyndication.com/*</string>
+  </array>
+  
+  <!-- Managed Bookmarks -->
+  <key>ManagedBookmarks</key>
+  <array>
+    <dict>
+      <key>toplevel_name</key>
+      <string>GrahmOS</string>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Emergency Response</string>
+      <key>url</key>
+      <string>https://grahmos.localhost:3000/emergency</string>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>Search & Documentation</string>
+      <key>url</key>
+      <string>https://grahmos.localhost:3000/search</string>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>3D Emergency Mapping</string>
+      <key>url</key>
+      <string>https://grahmos.localhost:3000/mapping</string>
+    </dict>
+    <dict>
+      <key>name</key>
+      <string>P2P Network Status</string>
+      <key>url</key>
+      <string>https://grahmos.localhost:3000/network</string>
+    </dict>
+  </array>
+  
+  <!-- Extension Settings -->
+  <key>ExtensionSettings</key>
+  <dict>
+    <key>*</key>
+    <dict>
+      <key>installation_mode</key>
+      <string>blocked</string>
+    </dict>
+  </dict>
+  
+  <!-- UI Settings -->
+  <key>BookmarkBarEnabled</key>
+  <true/>
+  
+  <key>ShowHomeButton</key>
+  <true/>
+  
+  <key>HideWebStoreIcon</key>
+  <true/>
+  
+  <key>DeveloperToolsAvailable</key>
+  <true/>
+  
+</dict>
+</plist>

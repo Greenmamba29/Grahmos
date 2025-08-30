@@ -1,12 +1,12 @@
-const { createHelia } = require('helia')
-const { createLibp2p } = require('libp2p')
-const { webSockets } = require('@libp2p/websockets')
-const { noise } = require('@chainsafe/libp2p-noise')
-const { mplex } = require('@libp2p/mplex')
-const { gossipsub } = require('@chainsafe/libp2p-gossipsub')
-const { identify } = require('@libp2p/identify')
-const nacl = require('tweetnacl')
-const util = require('tweetnacl-util')
+import { createHelia } from 'helia'
+import { createLibp2p } from 'libp2p'
+import { webSockets } from '@libp2p/websockets'
+import { noise } from '@chainsafe/libp2p-noise'
+import { mplex } from '@libp2p/mplex'
+import { gossipsub } from '@chainsafe/libp2p-gossipsub'
+import { identify } from '@libp2p/identify'
+import nacl from 'tweetnacl'
+import util from 'tweetnacl-util'
 
 const TOPIC = 'grahmos/updates/v1'
 

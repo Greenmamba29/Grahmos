@@ -1,0 +1,295 @@
+name: grahmos-edge-gateway
+version: '2.0.0'
+summary: Grahmos Edge Gateway for decentralized search and emergency communications
+description: |
+  Grahmos Edge Gateway provides P2P networking capabilities, offline content serving,
+  and real-time communication for emergency response scenarios. Features include:
+  
+  - P2P mesh networking with libp2p and IPFS
+  - Offline Wikipedia and content distribution via Kiwix
+  - Real-time messaging with gossipsub
+  - Cryptographic verification and security
+  - Automatic network discovery and joining
+  - Comprehensive monitoring and health checks
+  
+  Designed for deployment in stadiums, emergency shelters, and remote locations
+  where traditional internet infrastructure may be unavailable or unreliable.
+
+grade: stable
+confinement: strict
+base: core22
+
+# Application architecture support
+architectures:
+  - build-on: amd64
+    build-for: amd64
+  - build-on: arm64
+    build-for: arm64
+  - build-on: armhf
+    build-for: armhf
+
+# App definitions
+apps:
+  grahmos-edge-gateway:
+    command: bin/grahmos-edge
+    daemon: simple
+    restart-condition: always
+    restart-delay: 10s
+    
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      DATA_DIR: $SNAP_DATA/data
+      LOG_DIR: $SNAP_DATA/logs
+      CONFIG_DIR: $SNAP_DATA/config
+      
+    plugs:
+      - network
+      - network-bind
+      - network-control
+      - process-control
+      - system-observe
+      - hardware-observe
+      - log-observe
+      - mount-observe
+      - network-observe
+      - firewall-control
+      - docker-support
+    
+  edge-cli:
+    command: bin/grahmos-edge-cli
+    environment:
+      GRAHMOS_SOCKET: $SNAP_DATA/grahmos-edge.sock
+    plugs:
+      - network
+
+  status:
+    command: bin/status-check
+    plugs:
+      - network
+      - network-observe
+
+  logs:
+    command: bin/logs-viewer
+    plugs:
+      - log-observe
+
+# Package parts
+parts:
+  # Node.js runtime
+  nodejs:
+    plugin: dump
+    source: https://nodejs.org/dist/v20.12.0/node-v20.12.0-linux-x64.tar.xz
+    source-checksum: sha256/8b850c84291e6f71c2f1dafc90c6f1adbec78cc7f5c75be6d8c9b6e86de99b23
+    organize:
+      '*': nodejs/
+    prime:
+      - nodejs/bin/node
+      - nodejs/bin/npm
+      - nodejs/lib/node_modules/npm/**
+
+  # Grahmos Edge Gateway application
+  grahmos-edge:
+    after: [nodejs]
+    plugin: dump
+    source: ../../../apps/edge-api
+    
+    override-build: |
+      # Install pnpm
+      $SNAPCRAFT_PART_INSTALL/nodejs/bin/npm install -g pnpm
+      
+      # Set up Node.js environment
+      export PATH="$SNAPCRAFT_PART_INSTALL/nodejs/bin:$PATH"
+      export NODE_PATH="$SNAPCRAFT_PART_INSTALL/nodejs/lib/node_modules"
+      
+      # Install dependencies and build
+      pnpm install --frozen-lockfile --prod
+      pnpm build
+      
+      # Copy built application
+      mkdir -p $SNAPCRAFT_PART_INSTALL/app
+      cp -r dist/* $SNAPCRAFT_PART_INSTALL/app/
+      cp -r node_modules $SNAPCRAFT_PART_INSTALL/app/
+      cp package.json $SNAPCRAFT_PART_INSTALL/app/
+      
+      # Create executable wrapper
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cat > $SNAPCRAFT_PART_INSTALL/bin/grahmos-edge << 'EOF'
+      #!/bin/bash
+      export NODE_PATH="$SNAP/nodejs/lib/node_modules"
+      cd "$SNAP/app"
+      exec "$SNAP/nodejs/bin/node" dist/index.js "$@"
+      EOF
+      chmod +x $SNAPCRAFT_PART_INSTALL/bin/grahmos-edge
+
+  # P2P networking components
+  p2p-components:
+    after: [nodejs]
+    plugin: dump
+    source: ../../../packages/p2p-delta
+    
+    override-build: |
+      export PATH="$SNAPCRAFT_STAGE/nodejs/bin:$PATH"
+      export NODE_PATH="$SNAPCRAFT_STAGE/nodejs/lib/node_modules"
+      
+      # Install and build P2P components
+      pnpm install --frozen-lockfile --prod
+      pnpm build
+      
+      # Copy P2P libraries
+      mkdir -p $SNAPCRAFT_PART_INSTALL/p2p
+      cp -r dist/* $SNAPCRAFT_PART_INSTALL/p2p/
+      cp -r node_modules $SNAPCRAFT_PART_INSTALL/p2p/
+
+  # Cryptographic verification
+  crypto-verify:
+    after: [nodejs]
+    plugin: dump
+    source: ../../../packages/crypto-verify
+    
+    override-build: |
+      export PATH="$SNAPCRAFT_STAGE/nodejs/bin:$PATH"
+      export NODE_PATH="$SNAPCRAFT_STAGE/nodejs/lib/node_modules"
+      
+      # Install and build crypto components
+      pnpm install --frozen-lockfile --prod
+      pnpm build
+      
+      # Copy crypto libraries
+      mkdir -p $SNAPCRAFT_PART_INSTALL/crypto
+      cp -r dist/* $SNAPCRAFT_PART_INSTALL/crypto/
+      cp -r node_modules $SNAPCRAFT_PART_INSTALL/crypto/
+
+  # CLI tools
+  cli-tools:
+    plugin: dump
+    source: scripts/
+    organize:
+      '*': bin/
+    stage:
+      - bin/grahmos-edge-cli
+      - bin/status-check
+      - bin/logs-viewer
+    
+    override-build: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      
+      # Create CLI tool for edge management
+      cat > $SNAPCRAFT_PART_INSTALL/bin/grahmos-edge-cli << 'EOF'
+      #!/bin/bash
+      # Grahmos Edge Gateway CLI
+      SOCKET_PATH="$SNAP_DATA/grahmos-edge.sock"
+      
+      case "$1" in
+        status)
+          curl -s --unix-socket "$SOCKET_PATH" http://localhost/status | jq .
+          ;;
+        peers)
+          curl -s --unix-socket "$SOCKET_PATH" http://localhost/p2p/peers | jq .
+          ;;
+        metrics)
+          curl -s --unix-socket "$SOCKET_PATH" http://localhost/metrics
+          ;;
+        config)
+          cat "$SNAP_DATA/config/gateway.json" | jq .
+          ;;
+        restart)
+          snapctl restart grahmos-edge-gateway.grahmos-edge-gateway
+          ;;
+        *)
+          echo "Usage: $0 {status|peers|metrics|config|restart}"
+          exit 1
+          ;;
+      esac
+      EOF
+      chmod +x $SNAPCRAFT_PART_INSTALL/bin/grahmos-edge-cli
+      
+      # Create status check tool
+      cat > $SNAPCRAFT_PART_INSTALL/bin/status-check << 'EOF'
+      #!/bin/bash
+      echo "=== Grahmos Edge Gateway Status ==="
+      echo
+      echo "Service Status:"
+      snapctl services grahmos-edge-gateway
+      echo
+      echo "Network Interfaces:"
+      ip addr show | grep -E "^[0-9]+:|inet "
+      echo
+      echo "P2P Status:"
+      grahmos-edge-cli status 2>/dev/null || echo "Gateway not responding"
+      echo
+      echo "Disk Usage:"
+      df -h "$SNAP_DATA" 2>/dev/null || echo "Data directory not accessible"
+      EOF
+      chmod +x $SNAPCRAFT_PART_INSTALL/bin/status-check
+      
+      # Create logs viewer
+      cat > $SNAPCRAFT_PART_INSTALL/bin/logs-viewer << 'EOF'
+      #!/bin/bash
+      case "$1" in
+        follow|tail)
+          journalctl -u snap.grahmos-edge-gateway.grahmos-edge-gateway -f
+          ;;
+        error|errors)
+          journalctl -u snap.grahmos-edge-gateway.grahmos-edge-gateway -p err
+          ;;
+        *)
+          journalctl -u snap.grahmos-edge-gateway.grahmos-edge-gateway --no-pager -n 50
+          ;;
+      esac
+      EOF
+      chmod +x $SNAPCRAFT_PART_INSTALL/bin/logs-viewer
+
+  # System tools and utilities
+  system-tools:
+    plugin: nil
+    stage-packages:
+      - curl
+      - jq
+      - iproute2
+      - iputils-ping
+      - netcat-openbsd
+      - dnsutils
+    
+    override-prime: |
+      snapcraftctl prime
+      # Remove unnecessary files to reduce snap size
+      rm -rf usr/share/man
+      rm -rf usr/share/doc
+      rm -rf usr/share/info
+
+# Snap hooks for setup and configuration
+hooks:
+  install:
+    plugs: [network]
+  
+  configure:
+    plugs: [network]
+
+# Layout for proper file access
+layout:
+  /usr/local:
+    bind: $SNAP/usr/local
+
+# Version information
+version-script: |
+  echo "2.0.0-$(date +%Y%m%d)"
+
+# Additional metadata
+contact: support@grahmos.io
+source-code: https://github.com/grahmos/grahmos
+website: https://grahmos.io
+license: AGPL-3.0+
+
+# Snap store information
+icon: assets/grahmos-icon.svg
+screenshots:
+  - assets/screenshot-dashboard.png
+  - assets/screenshot-p2p-network.png
+
+# Publishing configuration
+publish:
+  - edge
+  - beta
+  - candidate
+  - stable

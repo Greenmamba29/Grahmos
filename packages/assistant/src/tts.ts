@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
-import fetch from 'node-fetch';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+// Use built-in fetch (Node.js 18+)
 
 export interface TTSOptions {
   voice?: string;

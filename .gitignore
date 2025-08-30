@@ -20,3 +20,7 @@ install.log
 dist/
 build/
 *.log
+.turbo/
+
+# Local Netlify folder
+.netlify

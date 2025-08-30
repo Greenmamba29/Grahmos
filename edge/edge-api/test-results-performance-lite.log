@@ -1,4 +1,2 @@
 ❌ [0;31mFAIL[0m - TypeScript Compilation: 8000 ms (target: <3000 ms)
-✅ [0;32mPASS[0m - TypeScript Compilation: 0 ms
-✅ [0;32mPASS[0m - TypeScript Compilation: 792 ms
-✅ [0;32mPASS[0m - TypeScript Compilation: 829 ms
+✅ [0;32mPASS[0m - TypeScript Compilation: 1029 ms

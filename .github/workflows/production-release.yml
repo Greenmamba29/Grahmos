@@ -1,0 +1,426 @@
+name: Production Release with Code Signing
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (v1.0.0, v2.1.3, etc.)
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor  
+        - major
+      pre_release:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8.15.4'
+  
+jobs:
+  # Build and sign for all platforms
+  build-and-sign:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+        include:
+          - os: macos-latest
+            platform: darwin
+            arch: x64,arm64
+          - os: windows-latest  
+            platform: win32
+            arch: x64,arm64
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64,arm64
+    
+    runs-on: ${{ matrix.os }}
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release_notes: ${{ steps.release_notes.outputs.notes }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for changelog generation
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: ${{ env.PNPM_VERSION }}
+        run_install: false
+    
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+    
+    - name: Setup pnpm cache
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+    
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+    
+    - name: Run tests
+      run: pnpm test
+    
+    - name: Run security audit
+      run: pnpm audit --audit-level high
+    
+    - name: Build all packages
+      run: pnpm build
+    
+    - name: Extract version
+      id: version
+      shell: bash
+      run: |
+        if [[ "${{ github.event_name }}" == "push" ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION=$(npm version --no-git-tag-version ${{ github.event.inputs.release_type }})
+          VERSION=${VERSION#v}
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+    
+    # macOS Signing
+    - name: Setup macOS certificates
+      if: matrix.platform == 'darwin'
+      env:
+        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      run: |
+        # Create variables
+        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+        PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+        # Import certificate and provisioning profile from secrets
+        echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode --output $CERTIFICATE_PATH
+        echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode --output $PP_PATH
+
+        # Create temporary keychain
+        security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+        # Import certificate to keychain
+        security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+
+        # Copy provisioning profile
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+    - name: Build macOS apps
+      if: matrix.platform == 'darwin'
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      run: |
+        # Build and sign macOS applications
+        cd apps/pwa-shell
+        pnpm build:mac
+        
+        # Notarize applications
+        xcrun notarytool submit "dist/Grahmos-${{ steps.version.outputs.version }}.dmg" \
+          --apple-id "$APPLE_ID" \
+          --password "$APPLE_ID_PASSWORD" \
+          --team-id "$APPLE_TEAM_ID" \
+          --wait
+    
+    # Windows Signing
+    - name: Setup Windows certificate
+      if: matrix.platform == 'win32'
+      env:
+        WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+        WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      run: |
+        # Import certificate for Windows signing
+        $CertPath = "$env:TEMP\certificate.p12"
+        [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE) | Set-Content -Path $CertPath -Encoding Byte
+        
+        # Import to certificate store
+        Import-PfxCertificate -FilePath $CertPath -CertStoreLocation Cert:\CurrentUser\My -Password (ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force)
+    
+    - name: Build Windows apps
+      if: matrix.platform == 'win32'
+      run: |
+        # Build and sign Windows applications
+        cd apps/pwa-shell
+        pnpm build:win
+        
+        # Sign executables with signtool
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22000.0\x64\signtool.exe" sign /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /a "dist\Grahmos-${{ steps.version.outputs.version }}.exe"
+    
+    # Linux Signing
+    - name: Setup GPG for Linux
+      if: matrix.platform == 'linux'
+      env:
+        GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      run: |
+        # Import GPG key for package signing
+        echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+        echo "$GPG_PASSPHRASE" | gpg --batch --yes --passphrase-fd 0 --pinentry-mode loopback --sign-key
+    
+    - name: Build Linux packages
+      if: matrix.platform == 'linux'
+      run: |
+        # Build and sign Linux packages
+        cd apps/pwa-shell
+        pnpm build:linux
+        
+        # Sign AppImage
+        gpg --batch --yes --passphrase "${{ secrets.GPG_PASSPHRASE }}" --pinentry-mode loopback --detach-sign --armor "dist/Grahmos-${{ steps.version.outputs.version }}.AppImage"
+        
+        # Create checksums
+        cd dist
+        sha256sum *.AppImage *.deb *.rpm > SHA256SUMS
+        gpg --batch --yes --passphrase "${{ secrets.GPG_PASSPHRASE }}" --pinentry-mode loopback --detach-sign --armor SHA256SUMS
+    
+    - name: Generate release notes  
+      id: release_notes
+      run: |
+        # Generate changelog from git history
+        if [[ "${{ github.event_name }}" == "push" ]]; then
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        else
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        fi
+        
+        if [[ -n "$PREVIOUS_TAG" ]]; then
+          NOTES=$(git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD)
+        else
+          NOTES="Initial release"
+        fi
+        
+        echo "notes<<EOF" >> $GITHUB_OUTPUT
+        echo "$NOTES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: grahmos-${{ matrix.platform }}-${{ steps.version.outputs.version }}
+        path: |
+          apps/pwa-shell/dist/
+          apps/edge-api/dist/
+        retention-days: 30
+    
+    # Clean up certificates (macOS)
+    - name: Clean up keychain and provisioning profile
+      if: always() && matrix.platform == 'darwin'
+      run: |
+        security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+        rm -f $RUNNER_TEMP/build_certificate.p12
+        rm -f $RUNNER_TEMP/build_pp.mobileprovision
+        rm -rf ~/Library/MobileDevice/Provisioning\ Profiles
+
+  # Mobile builds (iOS/Android)
+  build-mobile:
+    runs-on: macos-latest
+    needs: build-and-sign
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: ${{ env.PNPM_VERSION }}
+    
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+    
+    - name: Setup Java (for Android)
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    
+    - name: Build Android APK
+      env:
+        ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      run: |
+        # Build signed Android APK
+        cd apps/mobile
+        echo "$ANDROID_KEYSTORE" | base64 --decode > android-keystore.jks
+        pnpm build:android --release
+    
+    - name: Setup Xcode (for iOS)
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Build iOS IPA
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      run: |
+        # Build signed iOS application
+        cd apps/mobile
+        pnpm build:ios --release
+        
+        # Upload to App Store Connect
+        xcrun altool --upload-app -f "dist/Grahmos.ipa" -u "$APPLE_ID" -p "$APPLE_ID_PASSWORD"
+    
+    - name: Upload mobile artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: grahmos-mobile-${{ needs.build-and-sign.outputs.version }}
+        path: |
+          apps/mobile/dist/
+        retention-days: 30
+
+  # Create GitHub release
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [build-and-sign, build-mobile]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: ./artifacts
+    
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ needs.build-and-sign.outputs.version }}
+        name: Release v${{ needs.build-and-sign.outputs.version }}
+        body: |
+          ## Release Notes
+          ${{ needs.build-and-sign.outputs.release_notes }}
+          
+          ## Downloads
+          - **macOS**: Download the `.dmg` file
+          - **Windows**: Download the `.exe` file  
+          - **Linux**: Download the `.AppImage`, `.deb`, or `.rpm` file
+          - **Android**: Available on Google Play Store and as APK download
+          - **iOS**: Available on the App Store
+          
+          ## Verification
+          All binaries are cryptographically signed:
+          - macOS: Signed and notarized by Apple
+          - Windows: Signed with Extended Validation certificate
+          - Linux: GPG signed (verify with provided `.asc` files)
+          - Mobile: App Store signatures
+        files: |
+          artifacts/**/*
+        draft: false
+        prerelease: ${{ github.event.inputs.pre_release == 'true' }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Deploy update server metadata
+  deploy-update-metadata:
+    runs-on: ubuntu-latest
+    needs: [build-and-sign, create-release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Update release metadata
+      env:
+        UPDATE_SERVER_URL: ${{ secrets.UPDATE_SERVER_URL }}
+        UPDATE_SERVER_TOKEN: ${{ secrets.UPDATE_SERVER_TOKEN }}
+      run: |
+        # Upload release metadata to update server
+        curl -X POST "$UPDATE_SERVER_URL/api/releases" \
+          -H "Authorization: Bearer $UPDATE_SERVER_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "version": "${{ needs.build-and-sign.outputs.version }}",
+            "platforms": ["darwin", "win32", "linux", "android", "ios"],
+            "release_notes": "${{ needs.build-and-sign.outputs.release_notes }}",
+            "rollout_percentage": 10,
+            "created_at": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+          }'
+
+  # Security scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-and-sign
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Deployment verification
+  verify-deployment:
+    runs-on: ubuntu-latest
+    needs: [create-release, deploy-update-metadata]
+    
+    steps:
+    - name: Verify release availability
+      run: |
+        # Verify that the release is available
+        VERSION="${{ needs.build-and-sign.outputs.version }}"
+        
+        # Check GitHub release
+        curl -f "https://api.github.com/repos/${{ github.repository }}/releases/tags/v$VERSION"
+        
+        # Check update server
+        if [[ -n "${{ secrets.UPDATE_SERVER_URL }}" ]]; then
+          curl -f "${{ secrets.UPDATE_SERVER_URL }}/api/releases/$VERSION"
+        fi
+    
+    - name: Notify team
+      if: success()
+      run: |
+        echo "✅ Release v${{ needs.build-and-sign.outputs.version }} successfully deployed!"
+        echo "🔗 https://github.com/${{ github.repository }}/releases/tag/v${{ needs.build-and-sign.outputs.version }}"

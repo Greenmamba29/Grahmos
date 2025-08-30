@@ -1,0 +1,307 @@
+# Grahmos AlertManager Configuration
+# Phase 10: Advanced Monitoring - Intelligent Alerting System
+
+global:
+  # SMTP configuration for email alerts
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@grahmos.dev'
+  smtp_auth_username: 'alerts@grahmos.dev'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+  # Slack API URL
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+  # Resolve timeout
+  resolve_timeout: 5m
+
+# Define alert templates
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing tree for alerts
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'web.hook.default'
+  
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 30m
+    
+    # High priority alerts
+    - match:
+        severity: high
+      receiver: 'high-priority-alerts'
+      group_wait: 1m
+      group_interval: 5m
+      repeat_interval: 2h
+    
+    # Warning alerts
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 5m
+      group_interval: 30m
+      repeat_interval: 24h
+    
+    # Application-specific routing
+    - match:
+        service: grahmos-pwa
+      receiver: 'pwa-alerts'
+      continue: true
+    
+    - match:
+        service: grahmos-assistant
+      receiver: 'assistant-alerts'
+      continue: true
+    
+    - match:
+        service: grahmos-api
+      receiver: 'api-alerts'
+      continue: true
+    
+    # Security alerts
+    - match:
+        category: security
+      receiver: 'security-alerts'
+      group_wait: 30s
+      repeat_interval: 1h
+    
+    # Performance alerts
+    - match:
+        category: performance
+      receiver: 'performance-alerts'
+      group_wait: 2m
+      repeat_interval: 6h
+    
+    # Business metrics alerts
+    - match:
+        category: business
+      receiver: 'business-alerts'
+      group_wait: 10m
+      repeat_interval: 24h
+
+# Alert receivers configuration
+receivers:
+  # Default webhook receiver
+  - name: 'web.hook.default'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/default'
+        send_resolved: true
+        http_config:
+          bearer_token: '${WEBHOOK_TOKEN}'
+  
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'oncall@grahmos.dev,ops@grahmos.dev'
+        subject: 'CRITICAL: {{ .GroupLabels.alertname }} on {{ .GroupLabels.service }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Service: {{ .Labels.service }}
+          Instance: {{ .Labels.instance }}
+          Started: {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
+          
+          Labels: {{ range .Labels.SortedPairs }}
+            {{ .Name }}: {{ .Value }}{{ end }}
+          {{ end }}
+        
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#alerts-critical'
+        title: ':red_circle: CRITICAL Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Service:* {{ .Labels.service }}
+          *Severity:* {{ .Labels.severity }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+          {{ end }}
+        send_resolved: true
+    
+    webhook_configs:
+      - url: '${PAGERDUTY_WEBHOOK_URL}'
+        send_resolved: true
+        http_config:
+          bearer_token: '${PAGERDUTY_TOKEN}'
+  
+  # High priority alerts
+  - name: 'high-priority-alerts'
+    email_configs:
+      - to: 'ops@grahmos.dev'
+        subject: 'HIGH: {{ .GroupLabels.alertname }} needs attention'
+        body: |
+          {{ .CommonAnnotations.summary }}
+          
+          {{ .CommonAnnotations.description }}
+          
+          Affected services: {{ .GroupLabels.service }}
+        
+    slack_configs:
+      - channel: '#alerts-high'
+        title: ':warning: High Priority Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Service:* {{ .Labels.service }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+  
+  # Warning alerts
+  - name: 'warning-alerts'
+    slack_configs:
+      - channel: '#alerts-warning'
+        title: ':yellow_circle: Warning Alert'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Service:* {{ .Labels.service }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+  
+  # PWA-specific alerts
+  - name: 'pwa-alerts'
+    slack_configs:
+      - channel: '#frontend-alerts'
+        title: 'PWA Alert - {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *PWA Issue Detected*
+          *Alert:* {{ .Annotations.summary }}
+          *Impact:* {{ .Annotations.description }}
+          *Browser/Platform:* {{ .Labels.platform | default "Unknown" }}
+          {{ end }}
+  
+  # Assistant-specific alerts
+  - name: 'assistant-alerts'
+    slack_configs:
+      - channel: '#ai-alerts'
+        title: 'AI Assistant Alert - {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *AI Assistant Issue*
+          *Alert:* {{ .Annotations.summary }}
+          *Model:* {{ .Labels.model | default "Unknown" }}
+          *Impact:* {{ .Annotations.description }}
+          {{ end }}
+  
+  # API-specific alerts
+  - name: 'api-alerts'
+    slack_configs:
+      - channel: '#backend-alerts'
+        title: 'API Alert - {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *API Issue Detected*
+          *Endpoint:* {{ .Labels.endpoint | default "Unknown" }}
+          *Alert:* {{ .Annotations.summary }}
+          *Impact:* {{ .Annotations.description }}
+          {{ end }}
+  
+  # Security alerts
+  - name: 'security-alerts'
+    email_configs:
+      - to: 'security@grahmos.dev,ops@grahmos.dev'
+        subject: 'SECURITY ALERT: {{ .GroupLabels.alertname }}'
+        body: |
+          SECURITY INCIDENT DETECTED
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Source: {{ .Labels.instance }}
+          Threat Level: {{ .Labels.severity }}
+          Started: {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
+          {{ end }}
+    
+    slack_configs:
+      - channel: '#security-alerts'
+        title: ':rotating_light: SECURITY ALERT'
+        text: |
+          {{ range .Alerts }}
+          *SECURITY INCIDENT DETECTED*
+          *Alert:* {{ .Annotations.summary }}
+          *Threat Level:* {{ .Labels.severity }}
+          *Source:* {{ .Labels.instance }}
+          *Details:* {{ .Annotations.description }}
+          *Action Required:* {{ .Annotations.action | default "Review immediately" }}
+          {{ end }}
+  
+  # Performance alerts
+  - name: 'performance-alerts'
+    slack_configs:
+      - channel: '#performance-alerts'
+        title: 'Performance Alert - {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Performance Issue*
+          *Metric:* {{ .Labels.alertname }}
+          *Current Value:* {{ .Annotations.value }}
+          *Threshold:* {{ .Annotations.threshold }}
+          *Impact:* {{ .Annotations.description }}
+          {{ end }}
+  
+  # Business metrics alerts
+  - name: 'business-alerts'
+    email_configs:
+      - to: 'business@grahmos.dev,ops@grahmos.dev'
+        subject: 'Business Metric Alert: {{ .GroupLabels.alertname }}'
+        
+    slack_configs:
+      - channel: '#business-metrics'
+        title: 'Business Metric Alert'
+        text: |
+          {{ range .Alerts }}
+          *Business Impact Detected*
+          *Metric:* {{ .Annotations.summary }}
+          *Current Value:* {{ .Annotations.value }}
+          *Expected Range:* {{ .Annotations.threshold }}
+          *Business Impact:* {{ .Annotations.description }}
+          {{ end }}
+
+# Inhibition rules to prevent alert spam
+inhibit_rules:
+  # If a service is down, don't alert on its response time
+  - source_match:
+      alertname: 'ServiceDown'
+    target_match:
+      alertname: 'HighResponseTime'
+    equal: ['service', 'instance']
+  
+  # If there's a critical alert, suppress warning alerts for the same service
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['service']
+  
+  # If there's a database connection issue, suppress related alerts
+  - source_match:
+      alertname: 'DatabaseDown'
+    target_match_re:
+      alertname: '(HighQueryTime|DatabaseConnectionFailed)'
+    equal: ['instance']
+  
+  # If there's a network partition, suppress individual service alerts
+  - source_match:
+      alertname: 'NetworkPartition'
+    target_match_re:
+      alertname: '(ServiceDown|HighResponseTime)'
+    equal: ['cluster']
+
+# Silence configuration (for maintenance windows)
+silences:
+  # Example: Maintenance window silences would be configured here
+  # or via API during deployment

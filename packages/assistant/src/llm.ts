@@ -1,4 +1,5 @@
-import fetch from 'node-fetch';
+// Use built-in fetch (Node.js 18+)
+// @ts-ignore - fetch is available globally in Node 18+
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';

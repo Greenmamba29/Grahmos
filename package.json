@@ -49,11 +49,18 @@
     "security:scan": "./scripts/security-audit.sh",
     "health:check": "./scripts/health-check.sh",
     "backup:create": "./scripts/disaster-recovery.sh backup",
+    "test:auto-update": "node scripts/test-auto-update.js",
     "postinstall": "husky install"
   },
   "devDependencies": {
+    "husky": "^9.0.11",
     "pnpm": "^10.14.0",
     "turbo": "^2.5.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "sharp": "^0.33.5"
+    }
   },
   "dependencies": {
     "@chainsafe/libp2p-gossipsub": "^14.1.1",
