@@ -2,6 +2,7 @@
   # Build command for the PWA shell
   command = "pnpm install && pnpm build:apps"
   publish = "apps/pwa-shell/out"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF"
   
 [build.environment]
   NODE_VERSION = "22"
@@ -43,3 +44,10 @@
 [dev]
   command = "pnpm dev:pwa"
   port = 3000
+
+# Disable automatic Next.js plugin for static export
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+  [plugins.inputs]
+  disable = true
