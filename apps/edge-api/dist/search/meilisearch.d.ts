@@ -7,10 +7,12 @@ export declare class MeilisearchBackend implements SearchBackend {
     constructor();
     initialize(): Promise<void>;
     search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
-    getDocument(id: string): Promise<Document | null>;
+    index(documents: Document[]): Promise<void>;
+    delete(id: string): Promise<void>;
     getStatus(): Promise<BackendStatus>;
     private request;
     private extractSnippet;
-    private calculateScore;
+    clear(): Promise<void>;
+    getDocument(id: string): Promise<Document | null>;
 }
 //# sourceMappingURL=meilisearch.d.ts.map

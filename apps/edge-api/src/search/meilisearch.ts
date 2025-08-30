@@ -212,4 +212,33 @@ export class MeilisearchBackend implements SearchBackend {
       throw error;
     }
   }
+
+  async getDocument(id: string): Promise<Document | null> {
+    try {
+      const response = await this.request(
+        `/indexes/${this.indexName}/documents/${id}`
+      );
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Get document failed: ${response.status}`);
+      }
+
+      const doc = await response.json() as any;
+      
+      return {
+        id: doc.id,
+        title: doc.title || '',
+        content: doc.content || '',
+        metadata: doc.metadata || {}
+      };
+
+    } catch (error) {
+      console.error('Meilisearch get document error:', error);
+      throw error;
+    }
+  }
 }
