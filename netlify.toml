@@ -33,7 +33,6 @@
   to = "/index.html"
   status = 200
   force = false
-  conditions = {Role = []}
 
 # Handle API routes
 [[redirects]]
