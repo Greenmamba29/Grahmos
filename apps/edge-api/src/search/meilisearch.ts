@@ -1,3 +1,4 @@
+import fetch, { Response } from 'node-fetch';
 import { SearchBackend, SearchResult, SearchOptions, Document, BackendStatus } from './types.js';
 
 // Define Meilisearch-specific interfaces
@@ -58,71 +59,76 @@ export class MeilisearchBackend implements SearchBackend {
         highlightPreTag: '<mark>',
         highlightPostTag: '</mark>',
         attributesToCrop: ['content'],
-        cropLength: 200,
-        cropMarker: '…',
-        showMatchesPosition: true
+        cropLength: 100
       };
 
       const response = await this.request(`/indexes/${this.indexName}/search`, 'POST', searchParams);
       
       if (!response.ok) {
-        throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+        throw new Error(`Search failed: ${response.status}`);
       }
 
       const data = await response.json() as any;
-      
-      return data.hits.map((hit: any) => ({
-        id: hit.id.toString(),
-        title: hit._formatted?.title || hit.title || '',
+      const hits = data.hits || [];
+
+      return hits.map((hit: any) => ({
+        id: hit.id,
+        score: hit._score || 1,
+        title: hit.title || '',
         snippet: this.extractSnippet(hit),
-        score: this.calculateScore(hit),
-        metadata: {
-          backend: 'meilisearch',
-          query,
-          matchesPosition: hit._matchesPosition,
-          processingTime: data.processingTimeMs
-        }
+        url: hit.url || ''
       }));
 
     } catch (error) {
       console.error('Meilisearch search error:', error);
-      return [];
+      throw error;
     }
   }
 
-  async getDocument(id: string): Promise<Document | null> {
+  async index(documents: Document[]): Promise<void> {
     try {
-      const response = await this.request(`/indexes/${this.indexName}/documents/${id}`);
-      
-      if (response.status === 404) {
-        return null;
-      }
-      
+      const response = await this.request(
+        `/indexes/${this.indexName}/documents`,
+        'POST',
+        documents
+      );
+
       if (!response.ok) {
-        throw new Error(`Document retrieval failed: ${response.status}`);
+        throw new Error(`Indexing failed: ${response.status}`);
       }
 
-      const doc = await response.json() as any;
-      
-      return {
-        id: doc.id.toString(),
-        title: doc.title || '',
-        content: doc.content || '',
-        metadata: {
-          backend: 'meilisearch',
-          ...doc.metadata
-        }
-      };
+      const result = await response.json() as any;
+      console.log(`Indexed ${documents.length} documents, task ID: ${result.taskUid}`);
+
+      // Wait for indexing to complete (simplified - in production use task API)
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
     } catch (error) {
-      console.error('Meilisearch document retrieval error:', error);
-      return null;
+      console.error('Meilisearch indexing error:', error);
+      throw error;
+    }
+  }
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await this.request(
+        `/indexes/${this.indexName}/documents/${id}`,
+        'DELETE'
+      );
+
+      if (!response.ok && response.status !== 404) {
+        throw new Error(`Delete failed: ${response.status}`);
+      }
+
+    } catch (error) {
+      console.error('Meilisearch delete error:', error);
+      throw error;
     }
   }
 
   async getStatus(): Promise<BackendStatus> {
     try {
-      // Get health status
+      // Check health
       const healthResponse = await this.request('/health');
       if (!healthResponse.ok) {
         return {
@@ -141,9 +147,9 @@ export class MeilisearchBackend implements SearchBackend {
 
       return {
         healthy: true,
-        version: version?.pkgVersion || 'unknown',
+        version: version?.pkgVersion,
         indexSize: stats?.numberOfDocuments || 0,
-        lastUpdated: stats?.lastUpdate || 'unknown'
+        lastUpdated: stats?.lastUpdate
       };
 
     } catch (error) {
@@ -168,43 +174,71 @@ export class MeilisearchBackend implements SearchBackend {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined
-    }) as Promise<Response>;
+    });
   }
 
   private extractSnippet(hit: any): string {
-    // Try to get highlighted content first
+    // If Meilisearch provided a formatted snippet, use it
     if (hit._formatted?.content) {
       return hit._formatted.content;
     }
 
-    // Fall back to cropped content
-    if (hit.content) {
-      return hit.content.length > 200 
-        ? hit.content.substring(0, 200) + '…'
-        : hit.content;
+    // Otherwise, create a snippet from the content
+    const content = hit.content || '';
+    const maxLength = 100;
+    
+    if (content.length <= maxLength) {
+      return content;
     }
 
-    // Use title as fallback
-    return hit._formatted?.title || hit.title || '';
+    return content.substring(0, maxLength) + '...';
   }
 
-  private calculateScore(hit: any): number {
-    // Meilisearch doesn't provide explicit scores, so we estimate based on matches
-    let score = 0.5; // Base score
+  async clear(): Promise<void> {
+    try {
+      const response = await this.request(
+        `/indexes/${this.indexName}/documents`,
+        'DELETE'
+      );
 
-    if (hit._matchesPosition) {
-      // Boost score based on number of matches
-      const totalMatches = Object.values(hit._matchesPosition)
-        .flat()
-        .length as number;
-      score += Math.min(totalMatches * 0.1, 0.4);
-
-      // Boost if title matches
-      if (hit._matchesPosition.title?.length > 0) {
-        score += 0.3;
+      if (!response.ok) {
+        throw new Error(`Clear failed: ${response.status}`);
       }
-    }
 
-    return Math.min(score, 1.0);
+      console.log('Meilisearch index cleared');
+
+    } catch (error) {
+      console.error('Meilisearch clear error:', error);
+      throw error;
+    }
+  }
+
+  async getDocument(id: string): Promise<Document | null> {
+    try {
+      const response = await this.request(
+        `/indexes/${this.indexName}/documents/${id}`
+      );
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Get document failed: ${response.status}`);
+      }
+
+      const doc = await response.json() as any;
+      
+      return {
+        id: doc.id,
+        title: doc.title || '',
+        content: doc.content || '',
+        metadata: doc.metadata || {}
+      };
+
+    } catch (error) {
+      console.error('Meilisearch get document error:', error);
+      throw error;
+    }
   }
 }

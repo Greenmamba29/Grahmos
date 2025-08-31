@@ -80,7 +80,255 @@ export interface RiskFactor {
     impact: number;
     description: string;
 }
-export declare const ThreatDetectionConfigSchema: any;
+export declare const ThreatDetectionConfigSchema: z.ZodObject<{
+    models: z.ZodObject<{
+        anomalyDetection: z.ZodObject<{
+            enabled: z.ZodDefault<z.ZodBoolean>;
+            isolationForest: z.ZodObject<{
+                nTrees: z.ZodDefault<z.ZodNumber>;
+                maxSamples: z.ZodDefault<z.ZodNumber>;
+                contamination: z.ZodDefault<z.ZodNumber>;
+            }, "strip", z.ZodTypeAny, {
+                nTrees: number;
+                maxSamples: number;
+                contamination: number;
+            }, {
+                nTrees?: number | undefined;
+                maxSamples?: number | undefined;
+                contamination?: number | undefined;
+            }>;
+            autoencoder: z.ZodObject<{
+                enabled: z.ZodDefault<z.ZodBoolean>;
+                hiddenLayers: z.ZodDefault<z.ZodArray<z.ZodNumber, "many">>;
+                threshold: z.ZodDefault<z.ZodNumber>;
+            }, "strip", z.ZodTypeAny, {
+                enabled: boolean;
+                hiddenLayers: number[];
+                threshold: number;
+            }, {
+                enabled?: boolean | undefined;
+                hiddenLayers?: number[] | undefined;
+                threshold?: number | undefined;
+            }>;
+        }, "strip", z.ZodTypeAny, {
+            enabled: boolean;
+            isolationForest: {
+                nTrees: number;
+                maxSamples: number;
+                contamination: number;
+            };
+            autoencoder: {
+                enabled: boolean;
+                hiddenLayers: number[];
+                threshold: number;
+            };
+        }, {
+            isolationForest: {
+                nTrees?: number | undefined;
+                maxSamples?: number | undefined;
+                contamination?: number | undefined;
+            };
+            autoencoder: {
+                enabled?: boolean | undefined;
+                hiddenLayers?: number[] | undefined;
+                threshold?: number | undefined;
+            };
+            enabled?: boolean | undefined;
+        }>;
+        behaviorAnalysis: z.ZodObject<{
+            enabled: z.ZodDefault<z.ZodBoolean>;
+            profileWindow: z.ZodDefault<z.ZodNumber>;
+            sessionTimeout: z.ZodDefault<z.ZodNumber>;
+        }, "strip", z.ZodTypeAny, {
+            enabled: boolean;
+            profileWindow: number;
+            sessionTimeout: number;
+        }, {
+            enabled?: boolean | undefined;
+            profileWindow?: number | undefined;
+            sessionTimeout?: number | undefined;
+        }>;
+    }, "strip", z.ZodTypeAny, {
+        anomalyDetection: {
+            enabled: boolean;
+            isolationForest: {
+                nTrees: number;
+                maxSamples: number;
+                contamination: number;
+            };
+            autoencoder: {
+                enabled: boolean;
+                hiddenLayers: number[];
+                threshold: number;
+            };
+        };
+        behaviorAnalysis: {
+            enabled: boolean;
+            profileWindow: number;
+            sessionTimeout: number;
+        };
+    }, {
+        anomalyDetection: {
+            isolationForest: {
+                nTrees?: number | undefined;
+                maxSamples?: number | undefined;
+                contamination?: number | undefined;
+            };
+            autoencoder: {
+                enabled?: boolean | undefined;
+                hiddenLayers?: number[] | undefined;
+                threshold?: number | undefined;
+            };
+            enabled?: boolean | undefined;
+        };
+        behaviorAnalysis: {
+            enabled?: boolean | undefined;
+            profileWindow?: number | undefined;
+            sessionTimeout?: number | undefined;
+        };
+    }>;
+    thresholds: z.ZodObject<{
+        low: z.ZodDefault<z.ZodNumber>;
+        medium: z.ZodDefault<z.ZodNumber>;
+        high: z.ZodDefault<z.ZodNumber>;
+        critical: z.ZodDefault<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        medium: number;
+        low: number;
+        high: number;
+        critical: number;
+    }, {
+        medium?: number | undefined;
+        low?: number | undefined;
+        high?: number | undefined;
+        critical?: number | undefined;
+    }>;
+    features: z.ZodObject<{
+        network: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+        behavior: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+    }, "strip", z.ZodTypeAny, {
+        network: string[];
+        behavior: string[];
+    }, {
+        network?: string[] | undefined;
+        behavior?: string[] | undefined;
+    }>;
+    autoResponse: z.ZodObject<{
+        enabled: z.ZodDefault<z.ZodBoolean>;
+        actions: z.ZodObject<{
+            critical: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+            high: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+            medium: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+            low: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            medium: string[];
+            low: string[];
+            high: string[];
+            critical: string[];
+        }, {
+            medium?: string[] | undefined;
+            low?: string[] | undefined;
+            high?: string[] | undefined;
+            critical?: string[] | undefined;
+        }>;
+    }, "strip", z.ZodTypeAny, {
+        enabled: boolean;
+        actions: {
+            medium: string[];
+            low: string[];
+            high: string[];
+            critical: string[];
+        };
+    }, {
+        actions: {
+            medium?: string[] | undefined;
+            low?: string[] | undefined;
+            high?: string[] | undefined;
+            critical?: string[] | undefined;
+        };
+        enabled?: boolean | undefined;
+    }>;
+}, "strip", z.ZodTypeAny, {
+    models: {
+        anomalyDetection: {
+            enabled: boolean;
+            isolationForest: {
+                nTrees: number;
+                maxSamples: number;
+                contamination: number;
+            };
+            autoencoder: {
+                enabled: boolean;
+                hiddenLayers: number[];
+                threshold: number;
+            };
+        };
+        behaviorAnalysis: {
+            enabled: boolean;
+            profileWindow: number;
+            sessionTimeout: number;
+        };
+    };
+    thresholds: {
+        medium: number;
+        low: number;
+        high: number;
+        critical: number;
+    };
+    features: {
+        network: string[];
+        behavior: string[];
+    };
+    autoResponse: {
+        enabled: boolean;
+        actions: {
+            medium: string[];
+            low: string[];
+            high: string[];
+            critical: string[];
+        };
+    };
+}, {
+    models: {
+        anomalyDetection: {
+            isolationForest: {
+                nTrees?: number | undefined;
+                maxSamples?: number | undefined;
+                contamination?: number | undefined;
+            };
+            autoencoder: {
+                enabled?: boolean | undefined;
+                hiddenLayers?: number[] | undefined;
+                threshold?: number | undefined;
+            };
+            enabled?: boolean | undefined;
+        };
+        behaviorAnalysis: {
+            enabled?: boolean | undefined;
+            profileWindow?: number | undefined;
+            sessionTimeout?: number | undefined;
+        };
+    };
+    thresholds: {
+        medium?: number | undefined;
+        low?: number | undefined;
+        high?: number | undefined;
+        critical?: number | undefined;
+    };
+    features: {
+        network?: string[] | undefined;
+        behavior?: string[] | undefined;
+    };
+    autoResponse: {
+        actions: {
+            medium?: string[] | undefined;
+            low?: string[] | undefined;
+            high?: string[] | undefined;
+            critical?: string[] | undefined;
+        };
+        enabled?: boolean | undefined;
+    };
+}>;
 export type ThreatDetectionConfig = z.infer<typeof ThreatDetectionConfigSchema>;
 /**
  * Main Security Threat Detection System
