@@ -1,0 +1,46 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#grad)" filter="url(#shadow)"/>
+  
+  <!-- Emergency preparedness icon elements -->
+  
+  <!-- Shield (safety) -->
+  <path d="M200 140 L256 110 L312 140 L312 200 Q312 240 256 280 Q200 240 200 200 Z" 
+        fill="#ffffff" opacity="0.9"/>
+  
+  <!-- Cross (medical/first aid) -->
+  <rect x="244" y="160" width="24" height="80" fill="#ef4444" rx="2"/>
+  <rect x="220" y="184" width="72" height="24" fill="#ef4444" rx="2"/>
+  
+  <!-- Search magnifying glass -->
+  <circle cx="160" cy="320" r="28" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.8"/>
+  <line x1="182" y1="342" x2="200" y2="360" stroke="#ffffff" stroke-width="6" 
+        stroke-linecap="round" opacity="0.8"/>
+  
+  <!-- Map/navigation pins -->
+  <circle cx="350" cy="320" r="6" fill="#22c55e"/>
+  <circle cx="370" cy="340" r="6" fill="#f59e0b"/>
+  <circle cx="330" cy="350" r="6" fill="#ef4444"/>
+  
+  <!-- Connection dots (offline-first) -->
+  <circle cx="256" cy="380" r="4" fill="#ffffff" opacity="0.6"/>
+  <circle cx="240" cy="390" r="3" fill="#ffffff" opacity="0.4"/>
+  <circle cx="272" cy="390" r="3" fill="#ffffff" opacity="0.4"/>
+  <line x1="256" y1="380" x2="240" y2="390" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+  <line x1="256" y1="380" x2="272" y2="390" stroke="#ffffff" stroke-width="2" opacity="0.3"/>
+  
+  <!-- "G" monogram -->
+  <text x="256" y="450" font-family="system-ui, -apple-system, sans-serif" 
+        font-size="48" font-weight="700" fill="#ffffff" text-anchor="middle" 
+        opacity="0.7">G</text>
+</svg>

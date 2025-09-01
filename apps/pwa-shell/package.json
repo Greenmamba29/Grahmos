@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build && workbox generateSW workbox.config.cjs",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "validate-pwa": "node validate-pwa.js",
+    "test-pwa": "node test-pwa-browsers.js"
   },
   "dependencies": {
     "next": "15.4.6",
