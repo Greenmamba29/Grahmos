@@ -1,0 +1,25 @@
+{
+  "name": "ai-search",
+  "version": "1.0.0",
+  "description": "AI-enhanced search with offline GPT capabilities and memory management",
+  "main": "src/index.ts",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --test src/**/*.test.js",
+    "build": "echo \"No build required for TypeScript module\""
+  },
+  "keywords": ["ai", "search", "gpt", "offline", "transformers"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@xenova/transformers": "^2.15.0",
+    "dexie": "^4.0.11",
+    "search-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}
