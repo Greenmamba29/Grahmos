@@ -1,7 +1,18 @@
-import { pipeline, Pipeline } from '@xenova/transformers'
 import type { Doc } from 'search-core'
 import { search as baseSearch, initIndex, addDocs } from 'search-core'
 import { AISearchDB, type SearchContext, type SearchMemory, type AISearchSettings } from './memory'
+import { 
+  simpleAISearch, 
+  initSimpleAISearch, 
+  updateSimpleAISearchSettings,
+  getSimpleAISearchSettings,
+  clearSimpleSearchMemory,
+  getSimpleSearchAnalytics
+} from './simple-ai'
+
+// Dynamic import for transformers to avoid build issues
+type Pipeline = any
+let transformersLoaded = false
 
 export type { SearchContext, SearchMemory, AISearchSettings }
 
@@ -63,13 +74,23 @@ class AISearchEngine {
 
   private async loadModels(): Promise<void> {
     try {
+      // Dynamic import of transformers.js to avoid SSR issues
+      const { pipeline } = await import('@xenova/transformers')
+      
+      console.log('📦 Loading AI models...')
+      
       // Load text generation model (lightweight GPT-2 for offline use)
       this.textGenerator = await pipeline(
         'text-generation',
         this.settings.aiModelPath,
         { 
           cache_dir: './.ai-models',
-          local_files_only: false // Allow initial download
+          local_files_only: false, // Allow initial download
+          progress_callback: (data: any) => {
+            if (data.status === 'progress') {
+              console.log(`Loading model: ${Math.round((data.loaded / data.total) * 100)}%`)
+            }
+          }
         }
       )
 
@@ -79,14 +100,22 @@ class AISearchEngine {
         this.settings.embeddingModelPath,
         { 
           cache_dir: './.ai-models',
-          local_files_only: false
+          local_files_only: false,
+          progress_callback: (data: any) => {
+            if (data.status === 'progress') {
+              console.log(`Loading embedding model: ${Math.round((data.loaded / data.total) * 100)}%`)
+            }
+          }
         }
       )
 
-      console.log('📦 AI models loaded successfully')
+      transformersLoaded = true
+      console.log('✅ AI models loaded successfully')
     } catch (error) {
-      console.error('Failed to load AI models:', error)
+      console.warn('⚠️ AI models failed to load, continuing with basic search:', error)
       // Continue without AI features if models fail to load
+      this.textGenerator = null
+      this.textEmbedder = null
     }
   }
 
@@ -438,11 +467,75 @@ Summary:`
 // Export singleton instance
 export const aiSearchEngine = new AISearchEngine()
 
+// Smart wrapper that tries full AI search first, falls back to simple AI
+class SmartAISearch {
+  private useFullAI = true
+  
+  async search(query: string, options?: any): Promise<AISearchResponse> {
+    if (this.useFullAI) {
+      try {
+        return await aiSearchEngine.search(query, options)
+      } catch (error) {
+        console.warn('Full AI search failed, falling back to simple AI:', error)
+        this.useFullAI = false
+        return await simpleAISearch(query, options)
+      }
+    } else {
+      return await simpleAISearch(query, options)
+    }
+  }
+  
+  async initialize(): Promise<void> {
+    try {
+      await aiSearchEngine.initialize()
+      this.useFullAI = true
+    } catch (error) {
+      console.warn('Full AI initialization failed, using simple AI:', error)
+      this.useFullAI = false
+      await initSimpleAISearch()
+    }
+  }
+  
+  async updateSettings(settings: Partial<AISearchSettings>): Promise<void> {
+    if (this.useFullAI) {
+      return await aiSearchEngine.updateSettings(settings)
+    } else {
+      return await updateSimpleAISearchSettings(settings)
+    }
+  }
+  
+  async getSettings(): Promise<AISearchSettings> {
+    if (this.useFullAI) {
+      return await aiSearchEngine.getSettings()
+    } else {
+      return await getSimpleAISearchSettings()
+    }
+  }
+  
+  async clearMemory(): Promise<void> {
+    if (this.useFullAI) {
+      return await aiSearchEngine.clearMemory()
+    } else {
+      return await clearSimpleSearchMemory()
+    }
+  }
+  
+  async getSearchAnalytics(): Promise<any> {
+    if (this.useFullAI) {
+      return await aiSearchEngine.getSearchAnalytics()
+    } else {
+      return await getSimpleSearchAnalytics()
+    }
+  }
+}
+
+const smartAISearch = new SmartAISearch()
+
 // Export convenience functions
-export const aiSearch = (query: string, options?: any) => aiSearchEngine.search(query, options)
-export const initAISearch = () => aiSearchEngine.initialize()
+export const aiSearch = (query: string, options?: any) => smartAISearch.search(query, options)
+export const initAISearch = () => smartAISearch.initialize()
 export const updateAISearchSettings = (settings: Partial<AISearchSettings>) => 
-  aiSearchEngine.updateSettings(settings)
-export const getAISearchSettings = () => aiSearchEngine.getSettings()
-export const clearSearchMemory = () => aiSearchEngine.clearMemory()
-export const getSearchAnalytics = () => aiSearchEngine.getSearchAnalytics()
+  smartAISearch.updateSettings(settings)
+export const getAISearchSettings = () => smartAISearch.getSettings()
+export const clearSearchMemory = () => smartAISearch.clearMemory()
+export const getSearchAnalytics = () => smartAISearch.getSearchAnalytics()
