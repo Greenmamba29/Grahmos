@@ -5,7 +5,7 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  transpilePackages: ['p2p-delta', 'crypto-verify', 'local-db', 'search-core'],
+  transpilePackages: ['p2p-delta', 'crypto-verify', 'local-db', 'search-core', 'ai-search'],
   experimental: {
     esmExternals: 'loose'
   },

@@ -127,4 +127,250 @@ export function AISearchSettings({ onClose, className = "" }: AISearchSettingsPr
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-        )}\n      </div>\n\n      {/* Tabs */}\n      <div className=\"flex border-b border-gray-200 dark:border-gray-700\">\n        <button\n          onClick={() => setActiveTab('settings')}\n          className={`px-6 py-3 text-sm font-medium transition-colors ${\n            activeTab === 'settings'\n              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'\n              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'\n          }`}\n        >\n          Settings\n        </button>\n        <button\n          onClick={() => setActiveTab('analytics')}\n          className={`px-6 py-3 text-sm font-medium transition-colors ${\n            activeTab === 'analytics'\n              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'\n              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'\n          }`}\n        >\n          Analytics\n        </button>\n      </div>\n\n      {/* Content */}\n      <div className=\"p-6\">\n        {activeTab === 'settings' && (\n          <div className=\"space-y-6\">\n            {/* Memory Retention */}\n            <div>\n              <label className=\"block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2\">\n                Memory Retention Period\n              </label>\n              <div className=\"flex items-center space-x-3\">\n                <input\n                  type=\"range\"\n                  min=\"1\"\n                  max=\"168\"\n                  step=\"1\"\n                  value={settings.memoryRetentionHours}\n                  onChange={(e) => handleSettingChange('memoryRetentionHours', parseInt(e.target.value))}\n                  className=\"flex-1\"\n                />\n                <span className=\"text-sm text-gray-600 dark:text-gray-400 w-20 text-right\">\n                  {settings.memoryRetentionHours}h\n                  {settings.memoryRetentionHours >= 24 && (\n                    <span className=\"text-xs block text-gray-500\">\n                      ({Math.round(settings.memoryRetentionHours / 24)}d)\n                    </span>\n                  )}\n                </span>\n              </div>\n              <p className=\"text-xs text-gray-500 dark:text-gray-400 mt-1\">\n                Search memories will be automatically deleted after this period\n              </p>\n            </div>\n\n            {/* Context Memory Toggle */}\n            <div className=\"flex items-center justify-between\">\n              <div>\n                <h3 className=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n                  Context Memory 🧠\n                </h3>\n                <p className=\"text-xs text-gray-500 dark:text-gray-400\">\n                  AI remembers previous searches for better context awareness\n                </p>\n              </div>\n              <button\n                onClick={() => handleSettingChange('enableContextMemory', !settings.enableContextMemory)}\n                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${\n                  settings.enableContextMemory ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'\n                }`}\n              >\n                <span\n                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${\n                    settings.enableContextMemory ? 'translate-x-5' : 'translate-x-0'\n                  }`}\n                />\n              </button>\n            </div>\n\n            {/* AI Summaries Toggle */}\n            <div className=\"flex items-center justify-between\">\n              <div>\n                <h3 className=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n                  AI Summaries ✨\n                </h3>\n                <p className=\"text-xs text-gray-500 dark:text-gray-400\">\n                  Generate AI-powered summaries of search results\n                </p>\n              </div>\n              <button\n                onClick={() => handleSettingChange('enableAISummaries', !settings.enableAISummaries)}\n                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${\n                  settings.enableAISummaries ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'\n                }`}\n              >\n                <span\n                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${\n                    settings.enableAISummaries ? 'translate-x-5' : 'translate-x-0'\n                  }`}\n                />\n              </button>\n            </div>\n\n            {/* Max Context Length */}\n            <div>\n              <label className=\"block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2\">\n                Maximum Context Length\n              </label>\n              <div className=\"flex items-center space-x-3\">\n                <input\n                  type=\"range\"\n                  min=\"1000\"\n                  max=\"10000\"\n                  step=\"500\"\n                  value={settings.maxContextLength}\n                  onChange={(e) => handleSettingChange('maxContextLength', parseInt(e.target.value))}\n                  className=\"flex-1\"\n                />\n                <span className=\"text-sm text-gray-600 dark:text-gray-400 w-20 text-right\">\n                  {settings.maxContextLength.toLocaleString()}\n                </span>\n              </div>\n              <p className=\"text-xs text-gray-500 dark:text-gray-400 mt-1\">\n                Maximum characters to consider for AI processing\n              </p>\n            </div>\n\n            {/* Danger Zone */}\n            <div className=\"border-t border-gray-200 dark:border-gray-700 pt-6\">\n              <h3 className=\"text-sm font-medium text-red-700 dark:text-red-400 mb-3\">\n                Danger Zone\n              </h3>\n              <button\n                onClick={handleClearMemory}\n                className=\"px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors\"\n              >\n                Clear All Search Memory\n              </button>\n              <p className=\"text-xs text-gray-500 dark:text-gray-400 mt-2\">\n                This will permanently delete all search history and context data\n              </p>\n            </div>\n          </div>\n        )}\n\n        {activeTab === 'analytics' && analytics && (\n          <div className=\"space-y-6\">\n            {/* Overview Stats */}\n            <div className=\"grid grid-cols-2 md:grid-cols-4 gap-4\">\n              <div className=\"bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg\">\n                <div className=\"text-2xl font-bold text-gray-900 dark:text-gray-100\">\n                  {analytics.totalSearches}\n                </div>\n                <div className=\"text-sm text-gray-500 dark:text-gray-400\">\n                  Total Searches\n                </div>\n              </div>\n              <div className=\"bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg\">\n                <div className=\"text-2xl font-bold text-gray-900 dark:text-gray-100\">\n                  {analytics.averageResultsCount}\n                </div>\n                <div className=\"text-sm text-gray-500 dark:text-gray-400\">\n                  Avg Results\n                </div>\n              </div>\n              <div className=\"bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg\">\n                <div className=\"text-2xl font-bold text-gray-900 dark:text-gray-100\">\n                  {formatBytes(analytics.memoryUsage * 1024)}\n                </div>\n                <div className=\"text-sm text-gray-500 dark:text-gray-400\">\n                  Memory Usage\n                </div>\n              </div>\n              <div className=\"bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg\">\n                <div className=\"text-2xl font-bold text-blue-600 dark:text-blue-400\">\n                  🤖\n                </div>\n                <div className=\"text-sm text-gray-500 dark:text-gray-400\">\n                  AI Enhanced\n                </div>\n              </div>\n            </div>\n\n            {/* Top Queries */}\n            {analytics.topQueries.length > 0 && (\n              <div>\n                <h3 className=\"text-lg font-medium text-gray-900 dark:text-gray-100 mb-3\">\n                  Top Search Queries\n                </h3>\n                <div className=\"space-y-2\">\n                  {analytics.topQueries.slice(0, 5).map((item: any, index: number) => (\n                    <div key={index} className=\"flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg\">\n                      <span className=\"text-sm text-gray-700 dark:text-gray-300 truncate\">\n                        {item.query}\n                      </span>\n                      <span className=\"text-sm font-medium text-gray-500 dark:text-gray-400\">\n                        {item.count}x\n                      </span>\n                    </div>\n                  ))}\n                </div>\n              </div>\n            )}\n\n            {/* Memory Management */}\n            <div>\n              <h3 className=\"text-lg font-medium text-gray-900 dark:text-gray-100 mb-3\">\n                Memory Management\n              </h3>\n              <div className=\"bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg\">\n                <div className=\"flex items-center justify-between mb-2\">\n                  <span className=\"text-sm text-gray-700 dark:text-gray-300\">\n                    Current retention: {settings.memoryRetentionHours} hours\n                  </span>\n                  <span className=\"text-sm text-gray-500 dark:text-gray-400\">\n                    {analytics.memoryUsage}KB stored\n                  </span>\n                </div>\n                <div className=\"w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2\">\n                  <div \n                    className=\"bg-blue-600 h-2 rounded-full transition-all duration-300\" \n                    style={{ width: `${Math.min(100, (analytics.memoryUsage / 1024) * 100)}%` }}\n                  ></div>\n                </div>\n                <p className=\"text-xs text-gray-500 dark:text-gray-400 mt-2\">\n                  Memory will be automatically cleaned based on your retention settings\n                </p>\n              </div>\n            </div>\n          </div>\n        )}\n      </div>\n\n      {/* Save Status */}\n      {saving && (\n        <div className=\"absolute top-4 right-16 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium\">\n          ✓ Saved\n        </div>\n      )}\n    </div>\n  )\n}
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`px-6 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'settings'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          Settings
+        </button>
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`px-6 py-3 text-sm font-medium transition-colors ${
+            activeTab === 'analytics'
+              ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          Analytics
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="p-6">
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            {/* Memory Retention */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Memory Retention Period
+              </label>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="range"
+                  min="1"
+                  max="168"
+                  step="1"
+                  value={settings.memoryRetentionHours}
+                  onChange={(e) => handleSettingChange('memoryRetentionHours', parseInt(e.target.value))}
+                  className="flex-1"
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400 w-20 text-right">
+                  {settings.memoryRetentionHours}h
+                  {settings.memoryRetentionHours >= 24 && (
+                    <span className="text-xs block text-gray-500">
+                      ({Math.round(settings.memoryRetentionHours / 24)}d)
+                    </span>
+                  )}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Search memories will be automatically deleted after this period
+              </p>
+            </div>
+
+            {/* Context Memory Toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Context Memory 🧠
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  AI remembers previous searches for better context awareness
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingChange('enableContextMemory', !settings.enableContextMemory)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  settings.enableContextMemory ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    settings.enableContextMemory ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* AI Summaries Toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  AI Summaries ✨
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Generate AI-powered summaries of search results
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingChange('enableAISummaries', !settings.enableAISummaries)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  settings.enableAISummaries ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    settings.enableAISummaries ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Max Context Length */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Maximum Context Length
+              </label>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="range"
+                  min="1000"
+                  max="10000"
+                  step="500"
+                  value={settings.maxContextLength}
+                  onChange={(e) => handleSettingChange('maxContextLength', parseInt(e.target.value))}
+                  className="flex-1"
+                />
+                <span className="text-sm text-gray-600 dark:text-gray-400 w-20 text-right">
+                  {settings.maxContextLength.toLocaleString()}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Maximum characters to consider for AI processing
+              </p>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-sm font-medium text-red-700 dark:text-red-400 mb-3">
+                Danger Zone
+              </h3>
+              <button
+                onClick={handleClearMemory}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                Clear All Search Memory
+              </button>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                This will permanently delete all search history and context data
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analytics' && analytics && (
+          <div className="space-y-6">
+            {/* Overview Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {analytics.totalSearches}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Total Searches
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {analytics.averageResultsCount}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Avg Results
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {formatBytes(analytics.memoryUsage * 1024)}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Memory Usage
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  🤖
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  AI Enhanced
+                </div>
+              </div>
+            </div>
+
+            {/* Top Queries */}
+            {analytics.topQueries.length > 0 && (
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">
+                  Top Search Queries
+                </h3>
+                <div className="space-y-2">
+                  {analytics.topQueries.slice(0, 5).map((item: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                      <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                        {item.query}
+                      </span>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        {item.count}x
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Memory Management */}
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">
+                Memory Management
+              </h3>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-700 dark:text-gray-300">
+                    Current retention: {settings.memoryRetentionHours} hours
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {analytics.memoryUsage}KB stored
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                    style={{ width: `${Math.min(100, (analytics.memoryUsage / 1024) * 100)}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Memory will be automatically cleaned based on your retention settings
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Save Status */}
+      {saving && (
+        <div className="absolute top-4 right-16 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-xs font-medium">
+          ✓ Saved
+        </div>
+      )}
+    </div>
+  )
+}

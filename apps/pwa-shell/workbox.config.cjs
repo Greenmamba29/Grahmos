@@ -98,6 +98,23 @@ module.exports = {
       }
     },
     
+    // AI Chat API - special handling for local AI responses
+    {
+      urlPattern: ({url}) => url.pathname.startsWith('/api/ai/'),
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'ai-chat-cache',
+        networkTimeoutSeconds: 10, // Longer timeout for AI processing
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 // 24 hours
+        },
+        cacheableResponse: {
+          statuses: [0, 200]
+        }
+      }
+    },
+    
     // API fallback for when offline
     {
       urlPattern: ({url}) => url.pathname.startsWith('/api/'),

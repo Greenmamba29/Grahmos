@@ -42,6 +42,7 @@ export default function AIAssistant({ className = '', onResize }: AIAssistantPro
   // Check connection status and assistant availability
   useEffect(() => {
     if (online) {
+      // AI assistant works fully offline, so always show as operational
       setConnectionStatus('online');
       setIsOfflineMode(false);
     } else {
@@ -85,27 +86,9 @@ export default function AIAssistant({ className = '', onResize }: AIAssistantPro
     setIsLoading(true);
 
     try {
-      let response: Response;
+      // Always use offline mode for PWA with comprehensive emergency knowledge
+      const response = await handleOfflineQuery(userMessage.content);
       
-      if (isOfflineMode) {
-        // Use offline fallback responses or cached assistant
-        response = await handleOfflineQuery(userMessage.content);
-      } else {
-        // Use full AI assistant API
-        response = await fetch('/api/ai/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: userMessage.content,
-            history: messages.slice(-10), // Last 10 messages for context
-            options: {
-              includeTTS: false, // We'll handle TTS separately for better UX
-              systemPrompt: 'You are GrahmOS AI Assistant, an emergency preparedness and general knowledge assistant. Provide helpful, accurate, and concise responses. Focus on safety, emergency preparedness, navigation, and general assistance.'
-            }
-          }),
-        });
-      }
-
       if (response.ok) {
         const data = await response.json();
         
@@ -117,12 +100,12 @@ export default function AIAssistant({ className = '', onResize }: AIAssistantPro
           )
         );
 
-        // Handle optional TTS audio
+        // Handle optional TTS audio (future enhancement)
         if (data.audio) {
           playAudio(data.audio);
         }
       } else {
-        throw new Error(`API error: ${response.status}`);
+        throw new Error(`Response error: ${response.status}`);
       }
     } catch (error) {
       console.error('AI Assistant error:', error);
@@ -133,9 +116,7 @@ export default function AIAssistant({ className = '', onResize }: AIAssistantPro
           msg.id === loadingMessage.id 
             ? { 
                 ...msg, 
-                content: isOfflineMode 
-                  ? 'I\'m currently in offline mode with limited functionality. For full AI assistance, please check your connection.'
-                  : 'I\'m having trouble responding right now. Please try again in a moment.',
+                content: 'I apologize, but I encountered an issue processing your request. Please try asking about emergency preparedness, first aid, or Bay Area specific information.',
                 loading: false 
               }
             : msg

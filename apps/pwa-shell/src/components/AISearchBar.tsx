@@ -31,7 +31,7 @@ export function AISearchBar({
 
   const searchInputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const debounceTimerRef = useRef<NodeJS.Timeout>()
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize AI search on mount
   useEffect(() => {
@@ -206,16 +206,15 @@ export function AISearchBar({
           placeholder={placeholder}
           disabled={!isInitialized}
           className={`
-            block w-full pl-10 pr-12 py-3 
-            border border-gray-300 dark:border-gray-600 
-            rounded-xl shadow-sm 
-            placeholder-gray-500 dark:placeholder-gray-400
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-            bg-white dark:bg-gray-800 
-            text-gray-900 dark:text-gray-100
-            transition-all duration-200
+            block w-full pl-12 pr-16 py-4 
+            border-0 bg-neutral-800/50 backdrop-blur-sm
+            rounded-2xl shadow-lg
+            placeholder-neutral-400
+            focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-neutral-700/50
+            text-white text-lg
+            transition-all duration-300
             ${!isInitialized ? 'opacity-50 cursor-not-allowed' : ''}
-            ${error ? 'border-red-500 focus:ring-red-500' : ''}
+            ${error ? 'ring-2 ring-red-500/50 bg-red-900/10' : ''}
           `}
         />
 

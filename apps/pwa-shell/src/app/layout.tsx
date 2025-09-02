@@ -66,14 +66,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         
         {/* Service Worker registration is handled by ServiceWorkerProvider */}
       </head>
-      <body className="min-h-screen bg-neutral-950 text-neutral-100">
+      <body className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-neutral-100">
         <AnalyticsProvider>
           <ServiceWorkerProvider>
-            <div className="w-full border-b border-neutral-800 py-3 px-4 text-sm">
-              <span className="font-semibold">GrahmOS Directory</span>
-              <span className="opacity-60 ml-2">offline-first</span>
-            </div>
-            <main className="max-w-5xl mx-auto p-4">{children}</main>
+            {/* Clean Header */}
+            <header className="w-full bg-neutral-900/50 backdrop-blur-md border-b border-neutral-800/50 sticky top-0 z-40">
+              <div className="max-w-6xl mx-auto px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                      <span className="text-sm font-bold text-white">G</span>
+                    </div>
+                    <div>
+                      <h1 className="text-lg font-bold text-white">GrahmOS Directory</h1>
+                      <p className="text-xs text-neutral-400">Emergency Preparedness Platform</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 rounded-full text-xs font-medium border border-emerald-600/30">
+                      <div className="inline-block w-1.5 h-1.5 bg-emerald-400 rounded-full mr-2 animate-pulse"></div>
+                      Offline-First
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="max-w-6xl mx-auto p-6">
+              <div className="min-h-screen">
+                {children}
+              </div>
+            </main>
           </ServiceWorkerProvider>
         </AnalyticsProvider>
       </body>

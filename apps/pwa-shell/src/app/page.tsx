@@ -225,29 +225,40 @@ export default function Page(){
 
       {/* Tab Content */}
       {activeTab === 'search' ? (
-        <div className="space-y-4">
-          {/* AI Search Header */}
+        <div className="space-y-6">
+          {/* Clean Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-sm">🤖</span>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-lg">🤖</span>
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-neutral-100">
+                <h2 className="text-xl font-bold text-white">
                   AI-Enhanced Search
                 </h2>
-                <p className="text-xs text-neutral-400">
+                <p className="text-sm text-neutral-400">
                   Intelligent, context-aware search with offline capabilities
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className={`text-xs px-2 py-1 rounded ${online ? 'bg-emerald-700' : 'bg-amber-700'}`}>
+            <div className="flex items-center space-x-3">
+              <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                online 
+                  ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/30' 
+                  : 'bg-amber-600/20 text-amber-400 border border-amber-600/30'
+              }`}>
+                <div className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                  online ? 'bg-emerald-400' : 'bg-amber-400'
+                } animate-pulse`}></div>
                 {online ? 'Online' : 'Offline'}
-              </span>
+              </div>
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-2 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-neutral-300"
+                className={`p-2.5 rounded-xl transition-all duration-200 ${
+                  showSettings 
+                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
+                    : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700/50 hover:text-neutral-300'
+                }`}
                 title="AI Search Settings"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,48 +269,45 @@ export default function Page(){
             </div>
           </div>
 
-          {/* AI Search Bar */}
-          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+          {/* Clean Search Interface */}
+          <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 border border-neutral-700/50 rounded-2xl p-6 shadow-xl">
             <AISearchBar
               onResults={(results) => {
                 setAiSearchResults(results)
-                // Update activeDoc if we have results
                 if (results.results.length > 0) {
                   setActiveDoc(results.results[0])
                 }
               }}
-              placeholder="Ask anything... AI understands your context 🤖"
+              placeholder="Ask me about emergency preparedness, first aid, or anything else..."
               showSuggestions={true}
               showAISummary={true}
-              className="mb-4"
+              className=""
             />
 
-            {/* Quick Search Suggestions */}
+            {/* Streamlined Quick Suggestions */}
             {!aiSearchResults && (
-              <div className="mt-4">
-                <div className="text-sm text-neutral-300 mb-3">
-                  💡 **Suggested searches:**
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="mt-6 pt-6 border-t border-neutral-700/50">
+                <h3 className="text-sm font-medium text-neutral-300 mb-4 flex items-center">
+                  <span className="mr-2">💡</span>
+                  Popular topics to get you started
+                </h3>
+                <div className="flex flex-wrap gap-2">
                   {[
                     'earthquake preparedness',
                     'first aid basics', 
                     'emergency water storage',
                     'evacuation planning',
-                    'fire safety tips',
-                    'power outage survival',
-                    'emergency communication',
-                    'natural disaster recovery'
+                    'fire safety',
+                    'power outages',
                   ].map(term => (
                     <button
                       key={term}
-                      className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg transition-colors text-left text-xs"
+                      className="px-4 py-2 bg-neutral-800/60 hover:bg-neutral-700/60 border border-neutral-600/50 rounded-full transition-all duration-200 text-sm text-neutral-300 hover:text-white hover:border-neutral-500/50"
                       onClick={() => {
-                        // Trigger AI search with the term
-                        const event = new Event('input', { bubbles: true })
-                        const searchInput = document.querySelector('input[placeholder*="Ask anything"]') as HTMLInputElement
+                        const searchInput = document.querySelector('input[placeholder*="Ask me about"]') as HTMLInputElement
                         if (searchInput) {
                           searchInput.value = term
+                          const event = new Event('input', { bubbles: true })
                           searchInput.dispatchEvent(event)
                           searchInput.focus()
                         }
@@ -405,9 +413,9 @@ export default function Page(){
                       {aiSearchResults.suggestedQueries.map((query, index) => (
                         <button
                           key={index}
-                          className="text-xs px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded transition-colors"
+                          className="text-xs px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 rounded-full transition-colors border border-blue-600/30"
                           onClick={() => {
-                            const searchInput = document.querySelector('input[placeholder*="Ask anything"]') as HTMLInputElement
+                            const searchInput = document.querySelector('input[placeholder*="Ask me about"]') as HTMLInputElement
                             if (searchInput) {
                               searchInput.value = query
                               const event = new Event('input', { bubbles: true })
