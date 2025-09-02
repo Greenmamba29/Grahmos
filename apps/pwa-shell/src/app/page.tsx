@@ -6,6 +6,9 @@ import ContentViewer from '@/components/ContentViewer'
 import PurchaseModal from './purchase/PurchaseModal'
 import dynamic from 'next/dynamic'
 import AIAssistant from './components/AIAssistant'
+import { AISearchBar } from '@/components/AISearchBar'
+import { AISearchSettings } from '@/components/AISearchSettings'
+import type { AISearchResponse } from 'ai-search'
 
 // Dynamic import for map component to avoid SSR issues
 const MapView = dynamic(() => import('@/components/MapView'), {
@@ -22,8 +25,10 @@ export default function Page(){
   const { loading, error, search } = useOfflineSearch()
   const [q,setQ] = useState('')
   const [results,setResults] = useState<Doc[]>([])
+  const [aiSearchResults, setAiSearchResults] = useState<AISearchResponse | null>(null)
   const [activeDoc, setActiveDoc] = useState<Doc | null>(null)
   const [showBuy, setShowBuy] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<'search' | 'mapping' | 'assistant'>('search')
 
   // Comprehensive emergency overlays with realistic Bay Area data
@@ -193,7 +198,7 @@ export default function Page(){
             }`}
             onClick={() => setActiveTab('search')}
           >
-            🔍 Search & Documentation
+            🤖 AI-Enhanced Search
           </button>
           <button
             className={`py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg transition-colors ${
@@ -220,76 +225,242 @@ export default function Page(){
 
       {/* Tab Content */}
       {activeTab === 'search' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <input
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2"
-                placeholder={loading? 'Indexing…':'Search offline…'}
-                value={q}
-                onChange={e=>setQ(e.target.value)}
-              />
-              <span className={`text-xs px-2 py-1 rounded ${online? 'bg-emerald-700':'bg-amber-700'}`}>
-                {online? 'Online':'Offline'}
-              </span>
+        <div className="space-y-4">
+          {/* AI Search Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-sm">🤖</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-100">
+                  AI-Enhanced Search
+                </h2>
+                <p className="text-xs text-neutral-400">
+                  Intelligent, context-aware search with offline capabilities
+                </p>
+              </div>
             </div>
-        {error && <p className="text-red-400 text-sm">{error}</p>}
-        <ul className="divide-y divide-neutral-800 rounded-lg overflow-hidden border border-neutral-800">
-          {results.map((r: Doc)=> (
-            <li 
-              key={r.id} 
-              className={`p-3 hover:bg-neutral-900 cursor-pointer transition-colors ${
-                activeDoc?.id === r.id ? 'bg-neutral-800 border-l-2 border-blue-500' : ''
-              }`} 
-              onClick={()=>setActiveDoc(r)}
-            >
-              <div className="font-medium">{r.title}</div>
-              {r.summary && <div className="opacity-60 text-sm line-clamp-2">{r.summary}</div>}
-              {r.category && (
-                <div className={`inline-block px-1 py-0.5 text-xs rounded mt-1 ${getCategoryColorSmall(r.category)}`}>
-                  {r.category.replace('-', ' ')}
-                </div>
-              )}
-            </li>
-          ))}
-          {(!results || results.length===0) && !loading && q.trim().length === 0 && (
-            <li className="p-4 text-center">
-              <div className="text-neutral-300 mb-3">
-                🔍 **Try searching for:**
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {[
-                  'First Aid', 'Earthquake', 'Fire Safety', 'Water Storage',
-                  'Evacuation', 'Emergency Kit', 'Power Outage', 'CPR'
-                ].map(term => (
-                  <button
-                    key={term}
-                    className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg transition-colors text-left"
-                    onClick={() => setQ(term)}
-                  >
-                    {term}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-3 text-xs text-neutral-500">
-                Search through {loading ? '...' : '10+'} emergency preparedness articles
-              </div>
-            </li>
-          )}
-          {(!results || results.length===0) && !loading && q.trim().length > 0 && (
-            <li className="p-4 text-center text-neutral-400">
-              <div className="mb-2">🔍 No results found for "{q}"</div>
-              <div className="text-xs text-neutral-500">
-                Try different keywords like "first aid", "earthquake", or "emergency"
-              </div>
-            </li>
-          )}
-        </ul>
+            <div className="flex items-center space-x-2">
+              <span className={`text-xs px-2 py-1 rounded ${online ? 'bg-emerald-700' : 'bg-amber-700'}`}>
+                {online ? 'Online' : 'Offline'}
+              </span>
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="p-2 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-neutral-300"
+                title="AI Search Settings"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <div className="border border-neutral-800 rounded-xl overflow-hidden min-h-[60vh] bg-neutral-900">
-            <ContentViewer doc={activeDoc} className="h-[60vh] overflow-y-auto" />
+          {/* AI Search Bar */}
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+            <AISearchBar
+              onResults={(results) => {
+                setAiSearchResults(results)
+                // Update activeDoc if we have results
+                if (results.results.length > 0) {
+                  setActiveDoc(results.results[0])
+                }
+              }}
+              placeholder="Ask anything... AI understands your context 🤖"
+              showSuggestions={true}
+              showAISummary={true}
+              className="mb-4"
+            />
+
+            {/* Quick Search Suggestions */}
+            {!aiSearchResults && (
+              <div className="mt-4">
+                <div className="text-sm text-neutral-300 mb-3">
+                  💡 **Suggested searches:**
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    'earthquake preparedness',
+                    'first aid basics', 
+                    'emergency water storage',
+                    'evacuation planning',
+                    'fire safety tips',
+                    'power outage survival',
+                    'emergency communication',
+                    'natural disaster recovery'
+                  ].map(term => (
+                    <button
+                      key={term}
+                      className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg transition-colors text-left text-xs"
+                      onClick={() => {
+                        // Trigger AI search with the term
+                        const event = new Event('input', { bubbles: true })
+                        const searchInput = document.querySelector('input[placeholder*="Ask anything"]') as HTMLInputElement
+                        if (searchInput) {
+                          searchInput.value = term
+                          searchInput.dispatchEvent(event)
+                          searchInput.focus()
+                        }
+                      }}
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Settings Panel */}
+          {showSettings && (
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl">
+              <AISearchSettings onClose={() => setShowSettings(false)} />
+            </div>
+          )}
+
+          {/* Search Results */}
+          {aiSearchResults && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* AI Search Results Panel */}
+              <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-neutral-100">Search Results</h3>
+                  <div className="text-xs text-neutral-400">
+                    {aiSearchResults.results.length} results • {aiSearchResults.processingTime < 1000 
+                      ? `${aiSearchResults.processingTime}ms` 
+                      : `${(aiSearchResults.processingTime / 1000).toFixed(1)}s`}
+                  </div>
+                </div>
+
+                {/* AI Summary */}
+                {aiSearchResults.aiSummary && (
+                  <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-3 mb-4">
+                    <div className="flex items-start space-x-2">
+                      <div className="flex-shrink-0 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center mt-0.5">
+                        <span className="text-xs">🤖</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-blue-300 mb-1">AI Summary</h4>
+                        <p className="text-sm text-blue-100">{aiSearchResults.aiSummary}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Results List */}
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {aiSearchResults.results.map((result, index) => (
+                    <div
+                      key={result.id}
+                      className={`p-3 border border-neutral-700 rounded-lg cursor-pointer transition-colors hover:bg-neutral-800 ${
+                        activeDoc?.id === result.id ? 'bg-neutral-800 border-blue-600' : ''
+                      }`}
+                      onClick={() => setActiveDoc(result)}
+                    >
+                      <div className="flex items-start space-x-3">
+                        {result.aiEnhanced && (
+                          <div className="flex-shrink-0 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                            <span className="text-xs">✨</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-neutral-100 text-sm">{result.title}</h4>
+                          
+                          {result.aiSummary && (
+                            <div className="mt-2 p-2 bg-blue-900/20 rounded text-xs">
+                              <span className="text-blue-300 font-medium">🤖 AI:</span>
+                              <span className="text-blue-100 ml-1">{result.aiSummary}</span>
+                            </div>
+                          )}
+                          
+                          {result.summary && (
+                            <p className="text-xs text-neutral-400 mt-1 line-clamp-2">{result.summary}</p>
+                          )}
+                          
+                          <div className="flex items-center mt-2 space-x-2">
+                            {result.category && (
+                              <span className={`inline-block px-2 py-0.5 text-xs rounded ${getCategoryColorSmall(result.category)}`}>
+                                {result.category.replace('-', ' ')}
+                              </span>
+                            )}
+                            {result.contextRelevance !== undefined && (
+                              <span className="text-xs text-green-400">
+                                🎯 {Math.round(result.contextRelevance * 100)}% match
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Suggested Queries */}
+                {aiSearchResults.suggestedQueries.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-neutral-800">
+                    <h4 className="text-sm font-medium text-neutral-300 mb-2">AI Suggestions</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {aiSearchResults.suggestedQueries.map((query, index) => (
+                        <button
+                          key={index}
+                          className="text-xs px-2 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded transition-colors"
+                          onClick={() => {
+                            const searchInput = document.querySelector('input[placeholder*="Ask anything"]') as HTMLInputElement
+                            if (searchInput) {
+                              searchInput.value = query
+                              const event = new Event('input', { bubbles: true })
+                              searchInput.dispatchEvent(event)
+                              searchInput.focus()
+                            }
+                          }}
+                        >
+                          ⚡ {query}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Content Viewer */}
+              <div className="border border-neutral-800 rounded-xl overflow-hidden">
+                <ContentViewer doc={activeDoc} className="h-[70vh] overflow-y-auto" />
+              </div>
+            </div>
+          )}
+
+          {/* Fallback to basic search if no AI results */}
+          {!aiSearchResults && results.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+                <h3 className="text-lg font-medium text-neutral-100 mb-4">Basic Search Results</h3>
+                <ul className="divide-y divide-neutral-800">
+                  {results.map((r: Doc) => (
+                    <li 
+                      key={r.id} 
+                      className={`p-3 hover:bg-neutral-800 cursor-pointer transition-colors ${
+                        activeDoc?.id === r.id ? 'bg-neutral-800 border-l-2 border-blue-500' : ''
+                      }`} 
+                      onClick={() => setActiveDoc(r)}
+                    >
+                      <div className="font-medium text-neutral-100">{r.title}</div>
+                      {r.summary && <div className="opacity-60 text-sm line-clamp-2 text-neutral-400">{r.summary}</div>}
+                      {r.category && (
+                        <div className={`inline-block px-1 py-0.5 text-xs rounded mt-1 ${getCategoryColorSmall(r.category)}`}>
+                          {r.category.replace('-', ' ')}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="border border-neutral-800 rounded-xl overflow-hidden">
+                <ContentViewer doc={activeDoc} className="h-[70vh] overflow-y-auto" />
+              </div>
+            </div>
+          )}
         </div>
       ) : activeTab === 'mapping' ? (
         /* Mapping Tab Content */
