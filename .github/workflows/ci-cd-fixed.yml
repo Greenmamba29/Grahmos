@@ -49,7 +49,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 8.15.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -128,6 +128,7 @@ jobs:
         with:
           context: ./apps/edge-api
           file: ./apps/edge-api/Dockerfile
+          platforms: linux/amd64
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/edge-api:${{ github.sha }}
@@ -155,7 +156,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 8.15.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -194,7 +195,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 8.15.4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

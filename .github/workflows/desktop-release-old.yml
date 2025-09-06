@@ -93,7 +93,7 @@ jobs:
       - name: Setup PNPM (for workspace dependencies)
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 8.15.4
           run_install: false
       
       - name: Get pnpm store directory
@@ -452,6 +452,7 @@ jobs:
     
     steps:
       - name: Notify Slack
+        if: env.SLACK_WEBHOOK_URL != ''
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
@@ -472,3 +473,7 @@ jobs:
             Auto-update enabled for all platforms.
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Skip Slack notification
+        if: env.SLACK_WEBHOOK_URL == ''
+        run: echo "⚠️  Slack webhook not configured, skipping notification"

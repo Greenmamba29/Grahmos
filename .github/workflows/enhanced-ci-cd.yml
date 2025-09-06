@@ -52,7 +52,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 8.15.4
           run_install: false
         if: matrix.component == 'pwa' || matrix.component == 'assistant'
       
@@ -242,7 +242,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 8.15.4
           run_install: false
       
       - name: Set up Node.js
@@ -296,6 +296,7 @@ jobs:
           ./scripts/health-check.sh --environment=staging
       
       - name: Notify deployment
+        if: secrets.SLACK_WEBHOOK_URL != ''
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
@@ -303,6 +304,10 @@ jobs:
           text: 'Staging deployment completed for Grahmos V1+V2'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Skip deployment notification
+        if: secrets.SLACK_WEBHOOK_URL == ''
+        run: echo "⚠️  Slack webhook not configured, skipping deployment notification"
 
   # Deploy to edge nodes
   deploy-edge-nodes:
@@ -383,6 +388,7 @@ jobs:
           ./scripts/service-discovery.sh monitor --duration=5m
       
       - name: Notify production deployment
+        if: secrets.SLACK_WEBHOOK_URL != ''
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
@@ -390,6 +396,10 @@ jobs:
           text: 'Production deployment completed for Grahmos V1+V2 Enhanced Architecture'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Skip production notification
+        if: secrets.SLACK_WEBHOOK_URL == ''
+        run: echo "⚠️  Slack webhook not configured, skipping production notification"
 
   # Network infrastructure deployment
   deploy-network-infrastructure:
@@ -478,6 +488,7 @@ jobs:
     
     steps:
       - name: Notify deployment completion
+        if: secrets.SLACK_WEBHOOK_URL != ''
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
@@ -490,3 +501,7 @@ jobs:
             📊 Status: ${{ job.status }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Skip completion notification
+        if: secrets.SLACK_WEBHOOK_URL == ''
+        run: echo "⚠️  Slack webhook not configured, skipping completion notification"

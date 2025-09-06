@@ -1,12 +1,12 @@
 [build]
   # Build command for the PWA shell
-  command = "pnpm install && pnpm build:apps"
+  command = "pnpm install --frozen-lockfile && cd apps/pwa-shell && pnpm build"
   publish = "apps/pwa-shell/out"
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF"
   
 [build.environment]
-  NODE_VERSION = "22"
-  PNPM_VERSION = "10"
+  NODE_VERSION = "20"
+  PNPM_VERSION = "8.15.4"
 
 # Headers for security and performance
 [[headers]]
