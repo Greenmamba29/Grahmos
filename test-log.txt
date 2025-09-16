@@ -1,0 +1,10 @@
+
+> grahmos-unified@2.0.0 test /workspace
+> turbo run test
+
+turbo 2.5.6
+
+  x Missing tasks in project
+  `->   x Could not find task `test` in project
+
+ ELIFECYCLE  Test failed. See above for more details.

@@ -1,0 +1,27 @@
+
+> grahmos-unified@2.0.0 build:packages /workspace
+> turbo run build --filter='./packages/*'
+
+
+Attention:
+Turborepo now collects completely anonymous telemetry regarding usage.
+This information is used to shape the Turborepo roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://turborepo.com/docs/telemetry
+
+turbo 2.5.6
+
+• Packages in scope: @packages/assistant, crypto-verify, local-db, p2p-delta, search-core, ui
+• Running build in 6 packages
+• Remote caching disabled
+@packages/assistant:build: cache hit, replaying logs fea680dc9ef7204d
+@packages/assistant:build: 
+@packages/assistant:build: 
+@packages/assistant:build: > @packages/assistant@2.0.0 build /workspace/packages/assistant
+@packages/assistant:build: > tsc -p .
+@packages/assistant:build: 
+
+ Tasks:    1 successful, 1 total
+Cached:    1 cached, 1 total
+  Time:    163ms >>> FULL TURBO
+
