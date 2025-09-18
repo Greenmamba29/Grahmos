@@ -19,6 +19,7 @@
     "dev:kiwix": "cd apps/kiwix-serve && docker compose up",
     "dev:edge": "cd apps/edge-functions && wrangler dev",
     "dev:pwa": "cd apps/pwa-shell && pnpm dev",
+    "dev:agent": "cd apps/grahmos-agent && pnpm dev",
     "build": "turbo run build",
     "build:apps": "turbo run build --filter='./apps/*'",
     "build:packages": "turbo run build --filter='./packages/*'",
@@ -50,6 +51,7 @@
     "health:check": "./scripts/health-check.sh",
     "backup:create": "./scripts/disaster-recovery.sh backup",
     "test:auto-update": "node scripts/test-auto-update.js",
+    "test:semantic-search": "node scripts/test-semantic-search.js",
     "postinstall": "husky install"
   },
   "devDependencies": {
@@ -71,6 +73,10 @@
     "helia": "^5.5.1",
     "libp2p": "^2.9.0",
     "tweetnacl": "^1.0.3",
-    "tweetnacl-util": "^0.15.1"
+    "tweetnacl-util": "^0.15.1",
+    "gpt-oss": "^1.0.0",
+    "openai-harmony": "^0.4.0",
+    "uuid": "^10.0.0",
+    "ws": "^8.18.0"
   }
 }

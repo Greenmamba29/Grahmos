@@ -1,0 +1,460 @@
+/* 🚨 GENSPARK → GRAHMOS AGENT: SEARCH INTERFACE FIX
+   Frontend Agent Solution: Separate search input from suggestions/recommendations
+   Issue: Search interface overlapping with chat suggestions making it hard to distinguish
+   Status: Ready for implementation
+*/
+
+/* ===== SEARCH CONTAINER SEPARATION ===== */
+
+/* Main search container with proper z-index stacking */
+.search-container {
+  position: relative;
+  z-index: 100;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  margin-bottom: 24px; /* Clear separation from content below */
+}
+
+.search-container.focused {
+  border-color: rgb(59 130 246);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode support */
+.dark .search-container {
+  background: rgb(30 41 59);
+  border-color: rgb(71 85 105);
+}
+
+.dark .search-container.focused {
+  border-color: rgb(59 130 246);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== SEARCH INPUT STYLING ===== */
+
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  background: inherit;
+  border-radius: 14px;
+  position: relative;
+}
+
+.search-icon {
+  width: 24px;
+  height: 24px;
+  color: rgb(156 163 175);
+  margin-right: 16px;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.search-container.focused .search-icon {
+  color: rgb(59 130 246);
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: rgb(15 23 42);
+  placeholder-color: rgb(156 163 175);
+  line-height: 1.5;
+}
+
+.search-input::placeholder {
+  color: rgb(156 163 175);
+  font-weight: 400;
+}
+
+.dark .search-input {
+  color: rgb(248 250 252);
+}
+
+.dark .search-input::placeholder {
+  color: rgb(148 163 184);
+}
+
+/* Clear button styling */
+.search-clear-btn {
+  width: 20px;
+  height: 20px;
+  color: rgb(156 163 175);
+  cursor: pointer;
+  margin-left: 12px;
+  border-radius: 50%;
+  padding: 2px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.search-clear-btn:hover {
+  color: rgb(239 68 68);
+  background: rgb(254 242 242);
+}
+
+.dark .search-clear-btn:hover {
+  background: rgb(127 29 29 / 0.2);
+}
+
+/* ===== SUGGESTIONS PANEL - COMPLETELY SEPARATED ===== */
+
+.suggestions-panel {
+  position: absolute;
+  top: 100%; /* Position directly below search container */
+  left: 0;
+  right: 0;
+  z-index: 90; /* Lower than search container to prevent overlap */
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgb(229 231 235);
+  margin-top: 8px; /* Small gap between search and suggestions */
+  max-height: 400px;
+  overflow-y: auto;
+  transform: translateY(-8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.suggestions-panel.visible {
+  transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.dark .suggestions-panel {
+  background: rgb(30 41 59);
+  border-color: rgb(71 85 105);
+}
+
+/* ===== SUGGESTIONS CONTENT ===== */
+
+.suggestions-header {
+  padding: 16px 20px 8px;
+  border-bottom: 1px solid rgb(241 245 249);
+  background: rgb(249 250 251);
+  border-radius: 12px 12px 0 0;
+}
+
+.dark .suggestions-header {
+  background: rgb(51 65 85 / 0.3);
+  border-color: rgb(71 85 105);
+}
+
+.suggestions-title {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(71 85 105);
+  margin-bottom: 4px;
+}
+
+.dark .suggestions-title {
+  color: rgb(203 213 225);
+}
+
+.suggestions-subtitle {
+  font-size: 12px;
+  color: rgb(156 163 175);
+  margin: 0;
+}
+
+.suggestions-list {
+  padding: 12px 0;
+  list-style: none;
+  margin: 0;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  position: relative;
+}
+
+.suggestion-item:hover {
+  background: rgb(239 246 255);
+  border-left-color: rgb(59 130 246);
+}
+
+.dark .suggestion-item:hover {
+  background: rgb(30 58 138 / 0.1);
+}
+
+.suggestion-item.active {
+  background: rgb(219 234 254);
+  border-left-color: rgb(37 99 235);
+}
+
+.dark .suggestion-item.active {
+  background: rgb(30 58 138 / 0.2);
+}
+
+.suggestion-icon {
+  width: 16px;
+  height: 16px;
+  color: rgb(156 163 175);
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.suggestion-item:hover .suggestion-icon {
+  color: rgb(59 130 246);
+}
+
+.suggestion-text {
+  font-size: 14px;
+  color: rgb(31 41 55);
+  flex: 1;
+}
+
+.dark .suggestion-text {
+  color: rgb(226 232 240);
+}
+
+.suggestion-shortcut {
+  font-size: 11px;
+  color: rgb(156 163 175);
+  background: rgb(243 244 246);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.dark .suggestion-shortcut {
+  background: rgb(71 85 105 / 0.5);
+  color: rgb(148 163 184);
+}
+
+/* ===== CHAT INTERFACE - CLEARLY SEPARATED ===== */
+
+.chat-interface {
+  margin-top: 32px; /* Clear separation from search */
+  position: relative;
+  z-index: 10; /* Lower than search elements */
+  background: transparent;
+}
+
+/* Ensure chat messages don't interfere with search */
+.chat-message {
+  background: white;
+  border: 1px solid rgb(229 231 235);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 5;
+}
+
+.dark .chat-message {
+  background: rgb(30 41 59);
+  border-color: rgb(71 85 105);
+}
+
+/* ===== AI RECOMMENDATIONS - SEPARATE SECTION ===== */
+
+.ai-recommendations {
+  background: linear-gradient(135deg, rgb(239 246 255) 0%, rgb(219 234 254) 100%);
+  border: 1px solid rgb(191 219 254);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+  position: relative;
+  z-index: 5;
+}
+
+.dark .ai-recommendations {
+  background: linear-gradient(135deg, rgb(30 58 138 / 0.1) 0%, rgb(30 58 138 / 0.2) 100%);
+  border-color: rgb(30 64 175 / 0.3);
+}
+
+.ai-recommendations-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.ai-recommendations-icon {
+  width: 20px;
+  height: 20px;
+  color: rgb(59 130 246);
+  margin-right: 10px;
+}
+
+.ai-recommendations-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgb(30 58 138);
+  margin: 0;
+}
+
+.dark .ai-recommendations-title {
+  color: rgb(147 197 253);
+}
+
+.ai-recommendation-item {
+  background: white;
+  border: 1px solid rgb(219 234 254);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-recommendation-item:hover {
+  border-color: rgb(59 130 246);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.dark .ai-recommendation-item {
+  background: rgb(30 41 59 / 0.5);
+  border-color: rgb(71 85 105);
+}
+
+.dark .ai-recommendation-item:hover {
+  border-color: rgb(59 130 246);
+  background: rgb(30 41 59);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+@media (max-width: 768px) {
+  .search-container {
+    margin: 16px;
+    border-radius: 12px;
+  }
+  
+  .search-input-wrapper {
+    padding: 14px 16px;
+  }
+  
+  .suggestions-panel {
+    margin: 0 16px;
+    margin-top: 8px;
+    left: 0;
+    right: 0;
+  }
+  
+  .chat-interface {
+    margin-top: 24px;
+    padding: 0 16px;
+  }
+  
+  .ai-recommendations {
+    margin: 20px 16px 0;
+  }
+}
+
+/* ===== LOADING STATES ===== */
+
+.search-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.search-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgb(229 231 235);
+  border-top: 2px solid rgb(59 130 246);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+.search-container:focus-within {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-container,
+  .suggestions-panel,
+  .suggestion-item,
+  .ai-recommendation-item {
+    transition: none;
+  }
+  
+  .search-loading-spinner {
+    animation: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .search-container {
+    border-width: 3px;
+  }
+  
+  .suggestions-panel {
+    border-width: 2px;
+  }
+  
+  .suggestion-item:hover {
+    background: rgb(0 0 0 / 0.1);
+  }
+}
+
+/* ===== EMERGENCY MODE STYLING (GRAHMOS SPECIFIC) ===== */
+
+.search-container.emergency-mode {
+  border-color: rgb(239 68 68) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.search-container.emergency-mode .search-icon {
+  color: rgb(239 68 68);
+  animation: pulse-red 2s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.emergency-mode .suggestions-panel {
+  border-color: rgb(254 202 202);
+}
+
+.emergency-mode .ai-recommendations {
+  background: linear-gradient(135deg, rgb(254 242 242) 0%, rgb(254 226 226) 100%);
+  border-color: rgb(252 165 165);
+}
+
+.emergency-mode .ai-recommendations-title {
+  color: rgb(153 27 27);
+}
+
+.dark .emergency-mode .ai-recommendations {
+  background: linear-gradient(135deg, rgb(127 29 29 / 0.1) 0%, rgb(127 29 29 / 0.2) 100%);
+}
+
+.dark .emergency-mode .ai-recommendations-title {
+  color: rgb(252 165 165);
+}

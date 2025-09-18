@@ -1,0 +1,62 @@
+{
+  "name": "grahmos-agent",
+  "version": "1.0.0",
+  "description": "Grahmos AI Agent - Emergency-focused AI assistant with offline-first search capabilities",
+  "type": "module",
+  "main": "src/index.tsx",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.294.0",
+    "@packages/ui": "workspace:*",
+    "@packages/search-core": "workspace:*",
+    "@packages/ai": "workspace:*",
+    "@packages/p2p-delta": "workspace:*",
+    "@packages/crypto-verify": "workspace:*",
+    "@packages/local-db": "workspace:*",
+    "framer-motion": "^10.16.4",
+    "tailwindcss": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "@vitejs/plugin-react": "^4.1.0",
+    "eslint": "^8.53.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.4",
+    "typescript": "^5.2.2",
+    "vite": "^4.5.0",
+    "vitest": "^0.34.6",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31"
+  },
+  "keywords": [
+    "grahmos",
+    "emergency",
+    "ai-agent", 
+    "search",
+    "offline",
+    "p2p",
+    "privacy"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Greenmamba29/Grahmos.git",
+    "directory": "apps/grahmos-agent"
+  }
+}
