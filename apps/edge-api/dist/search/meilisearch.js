@@ -1,3 +1,4 @@
+import fetch from 'node-fetch';
 export class MeilisearchBackend {
     name = 'meilisearch';
     baseUrl;
@@ -41,61 +42,58 @@ export class MeilisearchBackend {
                 highlightPreTag: '<mark>',
                 highlightPostTag: '</mark>',
                 attributesToCrop: ['content'],
-                cropLength: 200,
-                cropMarker: '…',
-                showMatchesPosition: true
+                cropLength: 100
             };
             const response = await this.request(`/indexes/${this.indexName}/search`, 'POST', searchParams);
             if (!response.ok) {
-                throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+                throw new Error(`Search failed: ${response.status}`);
             }
             const data = await response.json();
-            return data.hits.map((hit) => ({
-                id: hit.id.toString(),
-                title: hit._formatted?.title || hit.title || '',
+            const hits = data.hits || [];
+            return hits.map((hit) => ({
+                id: hit.id,
+                score: hit._score || 1,
+                title: hit.title || '',
                 snippet: this.extractSnippet(hit),
-                score: this.calculateScore(hit),
-                metadata: {
-                    backend: 'meilisearch',
-                    query,
-                    matchesPosition: hit._matchesPosition,
-                    processingTime: data.processingTimeMs
-                }
+                url: hit.url || ''
             }));
         }
         catch (error) {
             console.error('Meilisearch search error:', error);
-            return [];
+            throw error;
         }
     }
-    async getDocument(id) {
+    async index(documents) {
         try {
-            const response = await this.request(`/indexes/${this.indexName}/documents/${id}`);
-            if (response.status === 404) {
-                return null;
-            }
+            const response = await this.request(`/indexes/${this.indexName}/documents`, 'POST', documents);
             if (!response.ok) {
-                throw new Error(`Document retrieval failed: ${response.status}`);
+                throw new Error(`Indexing failed: ${response.status}`);
             }
-            const doc = await response.json();
-            return {
-                id: doc.id.toString(),
-                title: doc.title || '',
-                content: doc.content || '',
-                metadata: {
-                    backend: 'meilisearch',
-                    ...doc.metadata
-                }
-            };
+            const result = await response.json();
+            console.log(`Indexed ${documents.length} documents, task ID: ${result.taskUid}`);
+            // Wait for indexing to complete (simplified - in production use task API)
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
         catch (error) {
-            console.error('Meilisearch document retrieval error:', error);
-            return null;
+            console.error('Meilisearch indexing error:', error);
+            throw error;
+        }
+    }
+    async delete(id) {
+        try {
+            const response = await this.request(`/indexes/${this.indexName}/documents/${id}`, 'DELETE');
+            if (!response.ok && response.status !== 404) {
+                throw new Error(`Delete failed: ${response.status}`);
+            }
+        }
+        catch (error) {
+            console.error('Meilisearch delete error:', error);
+            throw error;
         }
     }
     async getStatus() {
         try {
-            // Get health status
+            // Check health
             const healthResponse = await this.request('/health');
             if (!healthResponse.ok) {
                 return {
@@ -111,9 +109,9 @@ export class MeilisearchBackend {
             const version = versionResponse.ok ? await versionResponse.json() : null;
             return {
                 healthy: true,
-                version: version?.pkgVersion || 'unknown',
+                version: version?.pkgVersion,
                 indexSize: stats?.numberOfDocuments || 0,
-                lastUpdated: stats?.lastUpdate || 'unknown'
+                lastUpdated: stats?.lastUpdate
             };
         }
         catch (error) {
@@ -138,34 +136,52 @@ export class MeilisearchBackend {
         });
     }
     extractSnippet(hit) {
-        // Try to get highlighted content first
+        // If Meilisearch provided a formatted snippet, use it
         if (hit._formatted?.content) {
             return hit._formatted.content;
         }
-        // Fall back to cropped content
-        if (hit.content) {
-            return hit.content.length > 200
-                ? hit.content.substring(0, 200) + '…'
-                : hit.content;
+        // Otherwise, create a snippet from the content
+        const content = hit.content || '';
+        const maxLength = 100;
+        if (content.length <= maxLength) {
+            return content;
         }
-        // Use title as fallback
-        return hit._formatted?.title || hit.title || '';
+        return content.substring(0, maxLength) + '...';
     }
-    calculateScore(hit) {
-        // Meilisearch doesn't provide explicit scores, so we estimate based on matches
-        let score = 0.5; // Base score
-        if (hit._matchesPosition) {
-            // Boost score based on number of matches
-            const totalMatches = Object.values(hit._matchesPosition)
-                .flat()
-                .length;
-            score += Math.min(totalMatches * 0.1, 0.4);
-            // Boost if title matches
-            if (hit._matchesPosition.title?.length > 0) {
-                score += 0.3;
+    async clear() {
+        try {
+            const response = await this.request(`/indexes/${this.indexName}/documents`, 'DELETE');
+            if (!response.ok) {
+                throw new Error(`Clear failed: ${response.status}`);
             }
+            console.log('Meilisearch index cleared');
         }
-        return Math.min(score, 1.0);
+        catch (error) {
+            console.error('Meilisearch clear error:', error);
+            throw error;
+        }
+    }
+    async getDocument(id) {
+        try {
+            const response = await this.request(`/indexes/${this.indexName}/documents/${id}`);
+            if (response.status === 404) {
+                return null;
+            }
+            if (!response.ok) {
+                throw new Error(`Get document failed: ${response.status}`);
+            }
+            const doc = await response.json();
+            return {
+                id: doc.id,
+                title: doc.title || '',
+                content: doc.content || '',
+                metadata: doc.metadata || {}
+            };
+        }
+        catch (error) {
+            console.error('Meilisearch get document error:', error);
+            throw error;
+        }
     }
 }
 //# sourceMappingURL=meilisearch.js.map

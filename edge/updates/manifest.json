@@ -1,0 +1,22 @@
+{
+  "version": "2025.08.28",
+  "created": "2025-08-28T08:00:00Z",
+  "previous_version": "2025.08.22",
+  "update_type": "incremental",
+  "signature_algorithm": "RSA-SHA256",
+  "files": [
+    {
+      "path": "fts.sqlite",
+      "sha256": "placeholder_hash_will_be_generated_by_sign_script",
+      "bytes": 0,
+      "action": "replace"
+    }
+  ],
+  "metadata": {
+    "total_files": 1,
+    "total_bytes": 0,
+    "content_changes": "Initial release with base documents",
+    "requires_restart": false,
+    "rollback_supported": true
+  }
+}
