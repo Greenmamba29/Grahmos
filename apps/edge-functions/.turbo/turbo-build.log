@@ -4,8 +4,8 @@
 > wrangler deploy --dry-run
 
 
- ⛅️ wrangler 4.33.1
-[38;2;255;136;0m───────────────────[39m
+ ⛅️ wrangler 4.33.1 (update available [32m4.37.1[39m)
+[38;2;255;136;0m─────────────────────────────────────────────[39m
 Total Upload: [32m79.51 KiB / gzip: 15.17 KiB[39m
 Your Worker has access to the following bindings:
 [2mBinding[22m                                                                   [2mResource[22m                  

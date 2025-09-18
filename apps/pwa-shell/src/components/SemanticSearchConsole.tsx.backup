@@ -1,0 +1,601 @@
+'use client'
+
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { 
+  MagnifyingGlassIcon, 
+  CpuChipIcon, 
+  SparklesIcon,
+  ClockIcon,
+  LightBulbIcon,
+  ExclamationTriangleIcon,
+  SignalIcon,
+  Cog6ToothIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
+} from '@heroicons/react/24/outline'
+import type { 
+  SemanticSearchResponse, 
+  SemanticSearchResult, 
+  SemanticContext,
+  SemanticSearchConfig
+} from 'gpt-oss-search'
+
+interface SemanticSearchConsoleProps {
+  onSearch?: (query: string, results: SemanticSearchResponse) => void
+  initialContext?: SemanticContext
+  className?: string
+}
+
+export function SemanticSearchConsole({ 
+  onSearch, 
+  initialContext,
+  className = '' 
+}: SemanticSearchConsoleProps) {
+  const [query, setQuery] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+  const [results, setResults] = useState<SemanticSearchResponse | null>(null)
+  const [streamingResults, setStreamingResults] = useState<SemanticSearchResult[]>([])
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [searchHistory, setSearchHistory] = useState<string[]>([])
+  const [showReasoningChain, setShowReasoningChain] = useState(false)
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false)
+  const [reasoningEffort, setReasoningEffort] = useState<'low' | 'medium' | 'high'>('medium')
+  const [includeCoT, setIncludeCoT] = useState(false)
+  const [useStreaming, setUseStreaming] = useState(true)
+  const [emergencyMode, setEmergencyMode] = useState(false)
+  const [emergencyContext, setEmergencyContext] = useState({
+    situation: '',
+    urgency: 'medium' as 'low' | 'medium' | 'high' | 'critical',
+    location: ''
+  })
+  
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const resultsContainerRef = useRef<HTMLDivElement>(null)
+
+  // Focus search input on mount
+  useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [])
+
+  // Auto-scroll to latest streaming results
+  useEffect(() => {
+    if (isStreaming && resultsContainerRef.current) {
+      resultsContainerRef.current.scrollTop = resultsContainerRef.current.scrollHeight
+    }
+  }, [streamingResults, isStreaming])
+
+  const performSemanticSearch = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) return
+
+    setIsSearching(true)
+    setResults(null)
+    setStreamingResults([])
+    
+    try {
+      // Dynamic import for code splitting
+      const { semanticSearch, semanticSearchStream, emergencySemanticSearch, createSemanticContext } = 
+        await import('gpt-oss-search')
+
+      // Update search history
+      const updatedHistory = [searchQuery, ...searchHistory.filter(h => h !== searchQuery)].slice(0, 10)
+      setSearchHistory(updatedHistory)
+
+      // Create context
+      const context = createSemanticContext({
+        searchHistory: updatedHistory,
+        emergencyInfo: emergencyMode ? emergencyContext : undefined,
+        preferences: { 
+          includeCoT,
+          reasoningEffort,
+          streaming: useStreaming
+        }
+      })
+
+      if (useStreaming) {
+        // Streaming search
+        setIsStreaming(true)
+        const streamResults: SemanticSearchResult[] = []
+
+        for await (const result of semanticSearchStream(searchQuery, {
+          reasoning_effort: reasoningEffort,
+          context,
+          include_cot: includeCoT,
+          max_results: emergencyMode ? 15 : 10
+        })) {
+          streamResults.push(result)
+          setStreamingResults([...streamResults])
+          
+          // Small delay for smooth UX
+          await new Promise(resolve => setTimeout(resolve, 50))
+        }
+
+        setIsStreaming(false)
+        
+        // Create final response object for compatibility
+        const finalResponse: SemanticSearchResponse = {
+          query_id: `stream_${Date.now()}`,
+          results: streamResults,
+          semantic_summary: `Streaming search completed with ${streamResults.length} results`,
+          reasoning_chain: [],
+          suggested_queries: [],
+          context_insights: [`Streaming mode: real-time results for "${searchQuery}"`],
+          streaming_complete: true,
+          total_processing_time: 0,
+          cache_hit: false
+        }
+        
+        setResults(finalResponse)
+        onSearch?.(searchQuery, finalResponse)
+        
+      } else {
+        // Standard search
+        let response: SemanticSearchResponse
+
+        if (emergencyMode) {
+          response = await emergencySemanticSearch(searchQuery, emergencyContext, {
+            include_cot: includeCoT,
+            max_results: 15
+          })
+        } else {
+          response = await semanticSearch(searchQuery, {
+            reasoning_effort: reasoningEffort,
+            context,
+            include_cot: includeCoT,
+            max_results: 10
+          })
+        }
+
+        setResults(response)
+        onSearch?.(searchQuery, response)
+      }
+
+    } catch (error) {
+      console.error('Semantic search error:', error)
+      // Fallback to basic search would happen here
+    } finally {
+      setIsSearching(false)
+    }
+  }, [searchHistory, reasoningEffort, includeCoT, useStreaming, emergencyMode, emergencyContext, onSearch])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!isSearching && query.trim()) {
+      performSemanticSearch(query.trim())
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowUp' && searchHistory.length > 0) {
+      e.preventDefault()
+      const currentIndex = searchHistory.findIndex(h => h === query)
+      const nextIndex = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, searchHistory.length - 1)
+      setQuery(searchHistory[nextIndex])
+    } else if (e.key === 'ArrowDown' && searchHistory.length > 0) {
+      e.preventDefault()
+      const currentIndex = searchHistory.findIndex(h => h === query)
+      const prevIndex = currentIndex <= 0 ? -1 : currentIndex - 1
+      setQuery(prevIndex < 0 ? '' : searchHistory[prevIndex])
+    }
+  }
+
+  const formatProcessingTime = (time: number) => {
+    return time < 1000 ? `${time}ms` : `${(time / 1000).toFixed(1)}s`
+  }
+
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case 'critical': return 'text-red-500 dark:text-red-400'
+      case 'high': return 'text-orange-500 dark:text-orange-400'
+      case 'medium': return 'text-yellow-500 dark:text-yellow-400'
+      default: return 'text-green-500 dark:text-green-400'
+    }
+  }
+
+  const displayResults = useStreaming ? streamingResults : results?.results || []
+
+  return (
+    <div className={`w-full max-w-6xl mx-auto p-6 ${className}`}>
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <CpuChipIcon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+            Semantic Search Console
+          </h1>
+          {isStreaming && (
+            <div className="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400">
+              <SignalIcon className="h-4 w-4 animate-pulse" />
+              <span>Streaming...</span>
+            </div>
+          )}
+        </div>
+        
+        <p className="text-gray-600 dark:text-gray-300">
+          Real-time semantic search powered by GPT-OSS with emergency context awareness
+        </p>
+      </div>
+
+      {/* Search Form */}
+      <form onSubmit={handleSubmit} className="mb-8">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className={`h-5 w-5 ${isSearching ? 'text-blue-500 animate-pulse' : 'text-gray-400 dark:text-gray-500'}`} />
+          </div>
+          
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about emergency procedures, safety guidelines, or search for information..."
+            className="w-full pl-12 pr-16 py-4 text-lg border-2 border-gray-200 dark:border-gray-700 rounded-xl 
+                       bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                       focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 
+                       transition-all duration-200 shadow-sm hover:shadow-md"
+            disabled={isSearching}
+          />
+          
+          <button
+            type="submit"
+            disabled={isSearching || !query.trim()}
+            className="absolute inset-y-0 right-0 pr-4 flex items-center"
+          >
+            <div className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+              isSearching || !query.trim() 
+                ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm hover:shadow-md'
+            }`}>
+              {isSearching ? 'Searching...' : 'Search'}
+            </div>
+          </button>
+        </div>
+
+        {/* Emergency Mode Toggle */}
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={emergencyMode}
+                onChange={(e) => setEmergencyMode(e.target.checked)}
+                className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+              />
+              <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Emergency Mode
+              </span>
+            </label>
+
+            {emergencyMode && (
+              <div className="flex items-center gap-2">
+                <select
+                  value={emergencyContext.urgency}
+                  onChange={(e) => setEmergencyContext(prev => ({ 
+                    ...prev, 
+                    urgency: e.target.value as any 
+                  }))}
+                  className="text-sm px-2 py-1 rounded border border-gray-300 dark:border-gray-600 
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 
+                       hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+          >
+            <Cog6ToothIcon className="h-4 w-4" />
+            <span>Settings</span>
+            {showAdvancedSettings ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
+          </button>
+        </div>
+
+        {/* Advanced Settings */}
+        {showAdvancedSettings && (
+          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Reasoning Effort
+                </label>
+                <select
+                  value={reasoningEffort}
+                  onChange={(e) => setReasoningEffort(e.target.value as any)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="low">Low (Fast)</option>
+                  <option value="medium">Medium (Balanced)</option>
+                  <option value="high">High (Thorough)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useStreaming}
+                    onChange={(e) => setUseStreaming(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Streaming</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeCoT}
+                    onChange={(e) => setIncludeCoT(e.target.checked)}
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Chain of Thought</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+      </form>
+
+      {/* Search History */}
+      {searchHistory.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recent Searches</h3>
+          <div className="flex flex-wrap gap-2">
+            {searchHistory.slice(0, 5).map((historyQuery, index) => (
+              <button
+                key={index}
+                onClick={() => setQuery(historyQuery)}
+                className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300
+                         hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
+              >
+                {historyQuery}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      {(results || displayResults.length > 0) && (
+        <div className="space-y-6">
+          {/* Summary */}
+          {results && (
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 
+                           p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+              <div className="flex items-start justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  Search Summary
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  <ClockIcon className="h-4 w-4" />
+                  <span>{formatProcessingTime(results.total_processing_time)}</span>
+                  {results.cache_hit && (
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 
+                                   rounded-full text-xs">
+                      Cached
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                {results.semantic_summary}
+              </p>
+
+              {/* Context Insights */}
+              {results.context_insights.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Context Insights
+                  </h4>
+                  <ul className="space-y-1">
+                    {results.context_insights.map((insight, index) => (
+                      <li key={index} className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                        <LightBulbIcon className="h-4 w-4 text-yellow-500" />
+                        {insight}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Suggested Queries */}
+              {results.suggested_queries.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Suggested Related Searches
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {results.suggested_queries.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setQuery(suggestion)}
+                        className="px-3 py-1 text-sm bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700
+                                 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 
+                                 rounded-full transition-colors"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Reasoning Chain */}
+          {results?.reasoning_chain && results.reasoning_chain.length > 0 && (
+            <div className="bg-purple-50 dark:bg-purple-900/20 p-6 rounded-xl border border-purple-200 dark:border-purple-800">
+              <button
+                onClick={() => setShowReasoningChain(!showReasoningChain)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100">
+                  Reasoning Chain
+                </h3>
+                {showReasoningChain ? <ChevronUpIcon className="h-5 w-5" /> : <ChevronDownIcon className="h-5 w-5" />}
+              </button>
+              
+              {showReasoningChain && (
+                <div className="mt-4 space-y-3">
+                  {results.reasoning_chain.map((step, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-purple-600 text-white rounded-full 
+                                     flex items-center justify-center text-sm font-medium">
+                        {step.step}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-gray-700 dark:text-gray-300">{step.description}</p>
+                        <div className="flex items-center gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                          <span>Confidence: {(step.confidence * 100).toFixed(0)}%</span>
+                          <span className="text-gray-400">•</span>
+                          <span>Sources: {step.sources.join(', ')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Results List */}
+          <div ref={resultsContainerRef} className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Results ({displayResults.length})
+            </h3>
+            
+            {displayResults.map((result, index) => (
+              <div key={result.id} 
+                   className={`p-6 rounded-xl border transition-all duration-300 ${
+                     isStreaming && index === displayResults.length - 1
+                       ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                       : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:shadow-md'
+                   }`}>
+                
+                <div className="flex items-start justify-between mb-3">
+                  <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    {result.title}
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    {result.priority && (
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium uppercase
+                        ${result.priority === 'high' 
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          : result.priority === 'medium'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                          : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                        }`}>
+                        {result.priority} Priority
+                      </span>
+                    )}
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Score: {(result.semantic_score * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                </div>
+
+                {result.aiSummary && (
+                  <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                      <strong>AI Summary:</strong> {result.aiSummary}
+                    </p>
+                  </div>
+                )}
+
+                {result.summary && (
+                  <p className="text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">
+                    {result.summary}
+                  </p>
+                )}
+
+                {result.reasoning_trace && (
+                  <details className="mb-3">
+                    <summary className="text-sm text-purple-600 dark:text-purple-400 cursor-pointer hover:text-purple-800 dark:hover:text-purple-300">
+                      Show Reasoning Trace
+                    </summary>
+                    <div className="mt-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-sm text-gray-700 dark:text-gray-300">
+                      {result.reasoning_trace}
+                    </div>
+                  </details>
+                )}
+
+                <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-4">
+                    <span>Model: {result.model_used}</span>
+                    <span>Time: {formatProcessingTime(result.processing_time)}</span>
+                    {result.category && <span>Category: {result.category}</span>}
+                  </div>
+                  
+                  {result.real_time_updates && (
+                    <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                      <SignalIcon className="h-4 w-4" />
+                      <span>Real-time</span>
+                    </div>
+                  )}
+                </div>
+
+                {result.citations && result.citations.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Citations</h5>
+                    {result.citations.map((citation, citIndex) => (
+                      <div key={citIndex} className="text-xs text-gray-600 dark:text-gray-400">
+                        <span className="font-medium">Relevance: {(citation.relevance_score * 100).toFixed(0)}%</span>
+                        <span className="mx-2">•</span>
+                        <span>{citation.reasoning}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Streaming Indicator */}
+          {isStreaming && (
+            <div className="text-center py-6">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-blue-50 dark:bg-blue-900/20 
+                             rounded-full border border-blue-200 dark:border-blue-800">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+                <span className="text-blue-700 dark:text-blue-300 font-medium">
+                  Analyzing more results...
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* No Results */}
+      {!isSearching && !isStreaming && results && displayResults.length === 0 && (
+        <div className="text-center py-12">
+          <MagnifyingGlassIcon className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+            No results found
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Try adjusting your search terms or emergency context settings.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}

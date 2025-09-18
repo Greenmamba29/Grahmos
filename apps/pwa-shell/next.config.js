@@ -5,7 +5,7 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  transpilePackages: ['p2p-delta', 'crypto-verify', 'local-db', 'search-core', 'ai-search'],
+  transpilePackages: ['p2p-delta', 'crypto-verify', 'local-db', 'search-core', 'ai-search', 'gpt-oss-search'],
   experimental: {
     esmExternals: 'loose'
   },
@@ -22,6 +22,12 @@ const nextConfig = {
         fs: false,
         path: false,
         os: false,
+        crypto: require.resolve('crypto-browserify'),
+        events: require.resolve('events'),
+        stream: require.resolve('stream-browserify'),
+        buffer: require.resolve('buffer'),
+        util: require.resolve('util'),
+        child_process: false,
       }
       
       // Exclude server-only files from client bundle

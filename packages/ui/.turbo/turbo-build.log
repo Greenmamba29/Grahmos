@@ -1,6 +1,6 @@
 
-
-> ui@1.0.0 build /workspace/packages/ui
+
+> ui@1.0.0 build /Users/paco/Downloads/Grahmos/packages/ui
 > echo "No build required for UI components"
 
 No build required for UI components

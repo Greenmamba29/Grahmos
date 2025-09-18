@@ -638,7 +638,8 @@ export class RBACService {
     } else if (condition.field.startsWith('resource.')) {
       fieldValue = context.resourceAttributes?.[condition.field.substring(9)];
     } else if (condition.field.startsWith('env.')) {
-      fieldValue = context.environment?.[condition.field.substring(4)];
+      const envKey = condition.field.substring(4);
+      fieldValue = context.environment && (context.environment as any)[envKey];
     } else {
       fieldValue = context.userAttributes?.[condition.field] || 
                    context.resourceAttributes?.[condition.field];

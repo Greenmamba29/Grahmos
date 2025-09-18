@@ -81,7 +81,115 @@ export interface QueryResult {
     relevanceScore: number;
     metadata: Record<string, any>;
 }
-export declare const NLPQueryConfigSchema: any;
+export declare const NLPQueryConfigSchema: z.ZodObject<{
+    openai: z.ZodObject<{
+        apiKey: z.ZodString;
+        model: z.ZodDefault<z.ZodString>;
+        maxTokens: z.ZodDefault<z.ZodNumber>;
+        temperature: z.ZodDefault<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        apiKey: string;
+        model: string;
+        maxTokens: number;
+        temperature: number;
+    }, {
+        apiKey: string;
+        model?: string | undefined;
+        maxTokens?: number | undefined;
+        temperature?: number | undefined;
+    }>;
+    intents: z.ZodObject<{
+        threshold: z.ZodDefault<z.ZodNumber>;
+        supportedIntents: z.ZodDefault<z.ZodArray<z.ZodString, "many">>;
+    }, "strip", z.ZodTypeAny, {
+        threshold: number;
+        supportedIntents: string[];
+    }, {
+        threshold?: number | undefined;
+        supportedIntents?: string[] | undefined;
+    }>;
+    entities: z.ZodObject<{
+        customEntities: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodString, "many">>>;
+        threshold: z.ZodDefault<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        threshold: number;
+        customEntities: Record<string, string[]>;
+    }, {
+        threshold?: number | undefined;
+        customEntities?: Record<string, string[]> | undefined;
+    }>;
+    conversation: z.ZodObject<{
+        maxHistory: z.ZodDefault<z.ZodNumber>;
+        sessionTimeout: z.ZodDefault<z.ZodNumber>;
+    }, "strip", z.ZodTypeAny, {
+        sessionTimeout: number;
+        maxHistory: number;
+    }, {
+        sessionTimeout?: number | undefined;
+        maxHistory?: number | undefined;
+    }>;
+    search: z.ZodObject<{
+        maxResults: z.ZodDefault<z.ZodNumber>;
+        defaultSort: z.ZodDefault<z.ZodString>;
+        enableFacets: z.ZodDefault<z.ZodBoolean>;
+    }, "strip", z.ZodTypeAny, {
+        maxResults: number;
+        defaultSort: string;
+        enableFacets: boolean;
+    }, {
+        maxResults?: number | undefined;
+        defaultSort?: string | undefined;
+        enableFacets?: boolean | undefined;
+    }>;
+}, "strip", z.ZodTypeAny, {
+    search: {
+        maxResults: number;
+        defaultSort: string;
+        enableFacets: boolean;
+    };
+    openai: {
+        apiKey: string;
+        model: string;
+        maxTokens: number;
+        temperature: number;
+    };
+    entities: {
+        threshold: number;
+        customEntities: Record<string, string[]>;
+    };
+    intents: {
+        threshold: number;
+        supportedIntents: string[];
+    };
+    conversation: {
+        sessionTimeout: number;
+        maxHistory: number;
+    };
+}, {
+    search: {
+        maxResults?: number | undefined;
+        defaultSort?: string | undefined;
+        enableFacets?: boolean | undefined;
+    };
+    openai: {
+        apiKey: string;
+        model?: string | undefined;
+        maxTokens?: number | undefined;
+        temperature?: number | undefined;
+    };
+    entities: {
+        threshold?: number | undefined;
+        customEntities?: Record<string, string[]> | undefined;
+    };
+    intents: {
+        threshold?: number | undefined;
+        supportedIntents?: string[] | undefined;
+    };
+    conversation: {
+        sessionTimeout?: number | undefined;
+        maxHistory?: number | undefined;
+    };
+}>;
 export type NLPQueryConfig = z.infer<typeof NLPQueryConfigSchema>;
 /**
  * Intent Classification System

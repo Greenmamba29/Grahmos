@@ -225,216 +225,152 @@ export default function Page(){
 
       {/* Tab Content */}
       {activeTab === 'search' ? (
-        <div className="space-y-6">
-          {/* Clean Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-lg">🤖</span>
+        <div className="max-w-4xl mx-auto">
+          {/* Modern Search Interface - Google/ChatGPT Style */}
+          {(!results || results.length === 0) && !aiSearchResults ? (
+            <div className="text-center py-16">
+              {/* Logo */}
+              <div className="w-20 h-20 bg-gradient-to-br from-blue-500 via-purple-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                <span className="text-3xl">🤖</span>
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">
-                  AI-Enhanced Search
-                </h2>
-                <p className="text-sm text-neutral-400">
-                  Intelligent, context-aware search with offline capabilities
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                online 
-                  ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/30' 
-                  : 'bg-amber-600/20 text-amber-400 border border-amber-600/30'
-              }`}>
-                <div className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                  online ? 'bg-emerald-400' : 'bg-amber-400'
-                } animate-pulse`}></div>
-                {online ? 'Online' : 'Offline'}
-              </div>
-              <button
-                onClick={() => setShowSettings(!showSettings)}
-                className={`p-2.5 rounded-xl transition-all duration-200 ${
-                  showSettings 
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-600/30' 
-                    : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700/50 hover:text-neutral-300'
-                }`}
-                title="AI Search Settings"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Clean Search Interface */}
-          <div className="bg-gradient-to-br from-neutral-900 to-neutral-800 border border-neutral-700/50 rounded-2xl p-6 shadow-xl">
-            <AISearchBar
-              onResults={(results) => {
-                setAiSearchResults(results)
-                if (results.results.length > 0) {
-                  setActiveDoc(results.results[0])
-                }
-              }}
-              placeholder="Ask me about emergency preparedness, first aid, or anything else..."
-              showSuggestions={true}
-              showAISummary={true}
-              className=""
-            />
-
-            {/* Streamlined Quick Suggestions */}
-            {!aiSearchResults && (
-              <div className="mt-6 pt-6 border-t border-neutral-700/50">
-                <h3 className="text-sm font-medium text-neutral-300 mb-4 flex items-center">
-                  <span className="mr-2">💡</span>
-                  Popular topics to get you started
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    'earthquake preparedness',
-                    'first aid basics', 
-                    'emergency water storage',
-                    'evacuation planning',
-                    'fire safety',
-                    'power outages',
-                  ].map(term => (
-                    <button
-                      key={term}
-                      className="px-4 py-2 bg-neutral-800/60 hover:bg-neutral-700/60 border border-neutral-600/50 rounded-full transition-all duration-200 text-sm text-neutral-300 hover:text-white hover:border-neutral-500/50"
-                      onClick={() => {
-                        const searchInput = document.querySelector('input[placeholder*="Ask me about"]') as HTMLInputElement
-                        if (searchInput) {
-                          searchInput.value = term
-                          const event = new Event('input', { bubbles: true })
-                          searchInput.dispatchEvent(event)
-                          searchInput.focus()
-                        }
-                      }}
-                    >
-                      {term}
-                    </button>
-                  ))}
+              
+              {/* Title */}
+              <h1 className="text-3xl font-bold text-white mb-2">
+                Emergency AI Search
+              </h1>
+              <p className="text-lg text-neutral-400 mb-12">
+                Get instant answers about emergency preparedness and safety
+              </p>
+              
+              {/* Search Bar */}
+              <div className="relative mb-8">
+                <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                  <svg className="h-6 w-6 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Settings Panel */}
-          {showSettings && (
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl">
-              <AISearchSettings onClose={() => setShowSettings(false)} />
-            </div>
-          )}
-
-          {/* Search Results */}
-          {aiSearchResults && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* AI Search Results Panel */}
-              <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-neutral-100">Search Results</h3>
-                  <div className="text-xs text-neutral-400">
-                    {aiSearchResults.results.length} results • {aiSearchResults.processingTime < 1000 
-                      ? `${aiSearchResults.processingTime}ms` 
-                      : `${(aiSearchResults.processingTime / 1000).toFixed(1)}s`}
+                <input
+                  className="w-full pl-14 pr-6 py-5 text-lg bg-white/10 backdrop-blur-xl border border-white/20 rounded-full shadow-2xl placeholder-neutral-400 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent focus:bg-white/20 transition-all duration-300"
+                  placeholder="Ask about first aid, disasters, evacuation..."
+                  value={q}
+                  onChange={e => setQ(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && q.trim()) {
+                      // Trigger search with current input
+                      setResults([])
+                      performSearch()
+                    }
+                  }}
+                />
+                {/* Status indicator */}
+                <div className="absolute inset-y-0 right-0 pr-6 flex items-center">
+                  <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${
+                    online 
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  }`}>
+                    <div className={`inline-block w-1.5 h-1.5 rounded-full mr-2 ${
+                      online ? 'bg-emerald-400' : 'bg-amber-400'
+                    } animate-pulse`}></div>
+                    {online ? 'Online' : 'Offline'}
                   </div>
                 </div>
-
-                {/* AI Summary */}
-                {aiSearchResults.aiSummary && (
-                  <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-3 mb-4">
-                    <div className="flex items-start space-x-2">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center mt-0.5">
-                        <span className="text-xs">🤖</span>
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-sm font-medium text-blue-300 mb-1">AI Summary</h4>
-                        <p className="text-sm text-blue-100">{aiSearchResults.aiSummary}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Results List */}
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {aiSearchResults.results.map((result, index) => (
+              </div>
+              
+              {/* Quick suggestion pills */}
+              <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto">
+                {[
+                  'earthquake safety',
+                  'first aid basics',
+                  'emergency water',
+                  'evacuation plans',
+                  'fire safety',
+                  'power outages',
+                  'hurricane prep',
+                  'medical supplies'
+                ].map(term => (
+                  <button
+                    key={term}
+                    onClick={() => {
+                      setQ(term)
+                      setTimeout(() => performSearch(), 100)
+                    }}
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-full text-neutral-300 hover:text-white transition-all duration-300 backdrop-blur-sm shadow-lg hover:shadow-xl text-sm font-medium"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Search Results */
+            <div className="space-y-6">
+              {/* Search query display */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-white">Results for &quot;{q}&quot;</h2>
+                <button 
+                  onClick={() => {
+                    setQ('')
+                    setResults([])
+                    setActiveDoc(null)
+                    setAiSearchResults(null)
+                  }}
+                  className="text-neutral-400 hover:text-white transition-colors"
+                >
+                  New search
+                </button>
+              </div>
+              
+              {/* Results grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Results list */}
+                <div className="space-y-3">
+                  {results.map((r: Doc) => (
                     <div
-                      key={result.id}
-                      className={`p-3 border border-neutral-700 rounded-lg cursor-pointer transition-colors hover:bg-neutral-800 ${
-                        activeDoc?.id === result.id ? 'bg-neutral-800 border-blue-600' : ''
+                      key={r.id}
+                      className={`p-4 rounded-xl cursor-pointer transition-all duration-200 ${
+                        activeDoc?.id === r.id 
+                          ? 'bg-blue-500/20 border border-blue-500/30' 
+                          : 'bg-neutral-800/50 hover:bg-neutral-700/50 border border-neutral-700/50'
                       }`}
-                      onClick={() => setActiveDoc(result)}
+                      onClick={() => setActiveDoc(r)}
                     >
-                      <div className="flex items-start space-x-3">
-                        {result.aiEnhanced && (
-                          <div className="flex-shrink-0 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
-                            <span className="text-xs">✨</span>
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-neutral-100 text-sm">{result.title}</h4>
-                          
-                          {result.aiSummary && (
-                            <div className="mt-2 p-2 bg-blue-900/20 rounded text-xs">
-                              <span className="text-blue-300 font-medium">🤖 AI:</span>
-                              <span className="text-blue-100 ml-1">{result.aiSummary}</span>
-                            </div>
-                          )}
-                          
-                          {result.summary && (
-                            <p className="text-xs text-neutral-400 mt-1 line-clamp-2">{result.summary}</p>
-                          )}
-                          
-                          <div className="flex items-center mt-2 space-x-2">
-                            {result.category && (
-                              <span className={`inline-block px-2 py-0.5 text-xs rounded ${getCategoryColorSmall(result.category)}`}>
-                                {result.category.replace('-', ' ')}
-                              </span>
-                            )}
-                            {result.contextRelevance !== undefined && (
-                              <span className="text-xs text-green-400">
-                                🎯 {Math.round(result.contextRelevance * 100)}% match
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      <h3 className="font-medium text-white mb-2">{r.title}</h3>
+                      {r.summary && (
+                        <p className="text-sm text-neutral-300 line-clamp-3 mb-3">{r.summary}</p>
+                      )}
+                      {r.category && (
+                        <span className={`inline-block px-3 py-1 text-xs rounded-full font-medium ${getCategoryColorSmall(r.category)}`}>
+                          {r.category.replace('-', ' ')}
+                        </span>
+                      )}
                     </div>
                   ))}
-                </div>
-
-                {/* Suggested Queries */}
-                {aiSearchResults.suggestedQueries.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-neutral-800">
-                    <h4 className="text-sm font-medium text-neutral-300 mb-2">AI Suggestions</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {aiSearchResults.suggestedQueries.map((query, index) => (
-                        <button
-                          key={index}
-                          className="text-xs px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 rounded-full transition-colors border border-blue-600/30"
-                          onClick={() => {
-                            const searchInput = document.querySelector('input[placeholder*="Ask me about"]') as HTMLInputElement
-                            if (searchInput) {
-                              searchInput.value = query
-                              const event = new Event('input', { bubbles: true })
-                              searchInput.dispatchEvent(event)
-                              searchInput.focus()
-                            }
-                          }}
-                        >
-                          ⚡ {query}
-                        </button>
-                      ))}
+                  
+                  {loading && (
+                    <div className="text-center py-8">
+                      <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                      <p className="text-neutral-400">Searching...</p>
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Content Viewer */}
-              <div className="border border-neutral-800 rounded-xl overflow-hidden">
-                <ContentViewer doc={activeDoc} className="h-[70vh] overflow-y-auto" />
+                  )}
+                  
+                  {results.length === 0 && !loading && (
+                    <div className="text-center py-8">
+                      <p className="text-neutral-400 mb-4">No results found for &quot;{q}&quot;</p>
+                      <button 
+                        onClick={() => setQ('first aid')}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                      >
+                        Try &quot;first aid&quot;
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Content viewer */}
+                <div className="bg-neutral-800/30 border border-neutral-700/50 rounded-xl overflow-hidden">
+                  <ContentViewer doc={activeDoc} className="h-[70vh] overflow-y-auto" />
+                </div>
               </div>
             </div>
           )}
